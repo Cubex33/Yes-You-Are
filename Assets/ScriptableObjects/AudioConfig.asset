@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4611d66bfc94d534583d84b6e234ddca, type: 3}
+  m_Name: AudioConfig
+  m_EditorClassIdentifier: Assembly-CSharp::AudioConfig
+  hoverClip: {fileID: 8300000, guid: 75e733d88126a114e97edf7669d64482, type: 3}
+  pressClip: {fileID: 0}
+  enterClip: {fileID: 8300000, guid: 245965889d0a183438ef3478b27122c0, type: 3}
+  exitClip: {fileID: 0}
+  releaseClip: {fileID: 0}
