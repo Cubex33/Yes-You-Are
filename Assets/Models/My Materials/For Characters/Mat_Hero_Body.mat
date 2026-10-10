@@ -38,11 +38,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 6129f6ce110dff34cb733e2991340461, type: 3}
+        m_Texture: {fileID: 2800000, guid: 5fe47ddd54a41e849af8780e35161dd9, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: 0b242f96455737748b9fb789f2df81fe, type: 3}
+        m_Texture: {fileID: 2800000, guid: 18d44f1cccf9cdb4080b3fa694af6fce, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -70,7 +70,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
-        m_Texture: {fileID: 2800000, guid: 8d77964295ee7274ebd58f42f257c588, type: 3}
+        m_Texture: {fileID: 2800000, guid: c7b7255af8d261147b44269351fad09f, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap:
@@ -111,13 +111,13 @@ Material:
     - _AlphaClip: 0
     - _AlphaToMask: 0
     - _Alpha_Clip_Threshold: 0.5
-    - _Ambient_Self_Lighting: 0.25
+    - _Ambient_Self_Lighting: 0
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BumpScale: 1
     - _CastShadows: 1
-    - _Cel_Ramp_Smoothness: 0
-    - _Cel_Shader_Offset: 0.5
+    - _Cel_Ramp_Smoothness: 0.2
+    - _Cel_Shader_Offset: 0.75
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _Cull: 2
@@ -143,7 +143,7 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _Rim_Brightness: 1
-    - _Rim_Lighting: -0.01
+    - _Rim_Lighting: 0
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -162,12 +162,12 @@ Material:
     - _ZWriteControl: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.98490566, g: 0.96097916, b: 0.8752652, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Emissions_Color: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Shading_Color: {r: 0.690566, g: 0.690566, b: 0.690566, a: 1}
+    - _Shading_Color: {r: 0.6377357, g: 0.41272327, b: 0.41272327, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Texture_Offset: {r: 0, g: 0, b: 0, a: 0}
     - _Texture_Scale: {r: 1, g: 1, b: 0, a: 0}

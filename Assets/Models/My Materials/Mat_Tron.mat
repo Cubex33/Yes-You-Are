@@ -148,7 +148,7 @@ Material:
     - _Emissions_Color: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Shading_Color: {r: 0.49, g: 0.49, b: 0.49, a: 1}
+    - _Shading_Color: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Texture_Offset: {r: 0, g: 0, b: 0, a: 0}
     - _Texture_Scale: {r: 1, g: 1, b: 0, a: 0}
