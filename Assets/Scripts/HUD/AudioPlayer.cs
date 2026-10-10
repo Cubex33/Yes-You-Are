@@ -10,19 +10,11 @@ public class AudioPlayer : MonoBehaviour
     public string sfxParam = "SFXVolume";
     public string masterParam = "MasterVolume";
     [Header("Internal Sources")]
-    public AudioSettings audioSettings;
     public AudioSource musicSource;
     public AudioSource sfxSource;
     [Header("Settings")]
     public float fadeDuration = 1f;
     Coroutine _fadeCoroutine;
-
-    void Start()
-    {
-        if (audioSettings != null)
-        {
-        }    
-    }
 
     public void PlayMusic(AudioClip clip, bool loop = true)
     {

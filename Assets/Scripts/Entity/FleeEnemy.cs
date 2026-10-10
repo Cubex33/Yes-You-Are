@@ -1,144 +1,156 @@
-using System.ComponentModel;
+
 using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class FleeEnemy : EnemyBase
 {
-    [Header("Flee settings")]
-    public float fleeDistance = 8f;
-    public float fleeUpdateInterval = 0.4f;
-    public float fleeSpeed = 6f;
-    public float minEscapeDistance = 1.5f;
+    [Header("Flee Settings")]
+    [Tooltip("Скорость движения скелета при побеге")]
+    [Min(1f)]
+    public float fleeSpeed = 9f;
 
-    [Header("Panic settings")]
-    public float randomDirectionStrength = 2.5f;
-    public float separationRadius = 2f;
-    public float separationStrength = 3f;
+    [Tooltip("На какое расстояние скелет прокладывает путь от себя")]
+    [Min(2f)]
+    public float fleeDistance = 12f;
 
-    float nextFleeUpdate = 0f;
+    [Tooltip("Как часто скелет выбирает новое направление. Меньше = чаще")]
+    [Range(0.05f, 1f)]
+    public float pathUpdateInterval = 0.2f;
+
+    private float nextPathUpdate;
 
     public override void Start()
     {
         base.Start();
+
         CurrentState = EnemyState.Idle;
 
-        if (agent != null)
-        {
-            agent.updateRotation = true;
-            agent.updatePosition = true;
-            agent.speed = fleeSpeed;
+        if (agent == null)
+            return;
 
-            // 🔥 Улучшенное избегание
-            agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
-            agent.avoidancePriority = Random.Range(10, 90);
-        }
+        // Настраиваем движение для быстрого и плавного побега.
+        agent.updateRotation = true;
+        agent.updatePosition = true;
+
+        agent.speed = fleeSpeed;
+        agent.acceleration = 40f;
+        agent.angularSpeed = 720f;
+        agent.stoppingDistance = 0.1f;
+        agent.autoBraking = false;
+
+        // Помогаем скелетам обходить друг друга.
+        agent.obstacleAvoidanceType =
+            ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+
+        agent.avoidancePriority = Random.Range(10, 90);
     }
 
     public override void HandleIdle()
     {
         base.HandleIdle();
 
+        if (agent == null || target == null)
+            return;
+
         if (IsTargetInDistance(visionDistance))
         {
             CurrentState = EnemyState.Flee;
-
-            if (!agent.enabled) agent.enabled = true;
-            agent.isStopped = false;
-            agent.speed = fleeSpeed;
+            nextPathUpdate = 0f;
         }
-        else
+        else if (agent.enabled && agent.isOnNavMesh)
         {
-            if (agent != null && agent.enabled)
-            {
-                agent.ResetPath();
-                agent.isStopped = true;
-            }
+            agent.ResetPath();
+            agent.isStopped = true;
         }
     }
 
     public override void HandleFlee()
     {
-        if (target == null)
+        if (agent == null || target == null)
         {
             CurrentState = EnemyState.Idle;
             return;
         }
 
-        // Если цель потеряна из виду — возвращаемся в Idle (стоим)
+        // Если игрок далеко, прекращаем побег.
         if (!IsTargetInDistance(visionDistance))
         {
-            agent.ResetPath();
-            agent.isStopped = true;
+            if (agent.enabled && agent.isOnNavMesh)
+            {
+                agent.ResetPath();
+                agent.isStopped = true;
+            }
+
             CurrentState = EnemyState.Idle;
             return;
         }
 
-        // Подготовка агента
-        if (!agent.enabled) agent.enabled = true;
+        // Агент должен быть активен и находиться на NavMesh.
+        if (!agent.enabled || !agent.isOnNavMesh)
+            return;
+
         rb.isKinematic = true;
+
         agent.isStopped = false;
         agent.speed = fleeSpeed;
+        agent.autoBraking = false;
 
-        // Реже пересчитываем destination, чтобы не трясти путь каждый кадр
-        if (Time.time < nextFleeUpdate)
+        // Не пересчитываем маршрут каждый кадр.
+        // Но и не заставляем скелета долго ждать.
+        if (Time.time < nextPathUpdate &&
+            !agent.pathPending &&
+            agent.hasPath &&
+            agent.remainingDistance > 0.5f)
         {
-            // если дошли до текущей цели и нужно пересчитать
-            if (!agent.pathPending && agent.remainingDistance <= 0.5f)
-            {
-                nextFleeUpdate = 0f; // форсируем пересчет
-            }
-            else
-            {
-                return;
-            }
+            return;
         }
 
-        nextFleeUpdate = Time.time + fleeUpdateInterval;
+        nextPathUpdate = Time.time + pathUpdateInterval;
 
-        // направление от цели к нам (по горизонтали)
-        Vector3 awayDir = (transform.position - target.transform.position);
-        awayDir.y = 0f;
+        // Определяем направление от игрока.
+        Vector3 awayDirection =
+            transform.position - target.transform.position;
 
-        // если слишком близко и awayDir почти ноль — выбираем случайное напр.
-        if (awayDir.sqrMagnitude < 0.01f)
+        awayDirection.y = 0f;
+
+        if (awayDirection.sqrMagnitude < 0.01f)
         {
-            Vector3 rnd = Random.onUnitSphere;
-            rnd.y = 0f;
-            awayDir = rnd.normalized;
+            awayDirection = Random.insideUnitSphere;
+            awayDirection.y = 0f;
         }
 
-        float wantedDistance = fleeDistance;
-        // если очень близко — убегаем дальше
-        if (Vector3.Distance(transform.position, target.transform.position) < minEscapeDistance)
-            wantedDistance = Mathf.Max(fleeDistance, minEscapeDistance + 1.5f);
+        awayDirection.Normalize();
 
-        Vector3 rawTargetPos = transform.position + awayDir.normalized * wantedDistance;
+        Vector3 desiredPosition =
+            transform.position + awayDirection * fleeDistance;
 
-        // Пробуем найти ближайшую точку на NavMesh
-        NavMeshHit hit;
-        // agent.areaMask можно использовать, чтобы учитывать доступные области
-        int mask = (agent != null) ? agent.areaMask : NavMesh.AllAreas;
-        if (NavMesh.SamplePosition(rawTargetPos, out hit, 3.0f, mask))
+        int areaMask = agent.areaMask;
+
+        // Ищем подходящую точку на NavMesh.
+        if (NavMesh.SamplePosition(
+            desiredPosition,
+            out NavMeshHit hit,
+            5f,
+            areaMask))
         {
             agent.SetDestination(hit.position);
         }
         else
         {
-            // fallback: попробуем ближе к текущей позиции
-            if (NavMesh.SamplePosition(transform.position + awayDir.normalized * (wantedDistance * 0.5f), out hit, 6.0f, mask))
+            // Если впереди стена или край NavMesh,
+            // пробуем найти ближайший доступный путь.
+            Vector3 shorterPosition =
+                transform.position + awayDirection * (fleeDistance * 0.5f);
+
+            if (NavMesh.SamplePosition(
+                shorterPosition,
+                out hit,
+                8f,
+                areaMask))
             {
                 agent.SetDestination(hit.position);
             }
-            else
-            {
-                // если совсем ничего — просто стоим (без крэша)
-                agent.ResetPath();
-            }
         }
     }
-
-    
-
-
 }

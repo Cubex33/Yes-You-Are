@@ -19,7 +19,8 @@ public class CollisionDamage : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        if (monoCollider) HandleCollision(collision, transform);      
+        if (monoCollider)
+            HandleCollision(collision, transform);
     }
 
     public void HandleCollision(Collision collision, Transform bone)

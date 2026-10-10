@@ -41,6 +41,8 @@ namespace Lucy.Core
             //Debug.Log($"{gameObject.name} took {amount} IsDead {IsDead}, {Immortal} damage from {source} CurrentHealth {currentHealth}/{maxHealth}");
             if (IsDead || amount <= 0 || Immortal) return;
 
+            GetComponent<DeferredPhysicsActivation>()?.ActivatePhysics();
+
             currentHealth -= amount;
             currentHealth = Mathf.Max(currentHealth, 0);
 
