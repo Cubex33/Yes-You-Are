@@ -7,6 +7,7 @@ TagManager:
   - Ground
   - FxTemporaire
   - Skelet
+  - startPos
   layers:
   - Default
   - TransparentFX
