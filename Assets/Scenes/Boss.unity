@@ -236,45 +236,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 6847128839456658298, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
   m_PrefabInstance: {fileID: 630115809}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &562155510
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 562155501}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ad9f667af850d144c90ab8adfff0889d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Boss
-  maxHealth: 100
-  currentHealth: 0
-  immortal: 0
-  showLookDirection: 0
-  lookLineColor: {r: 0, g: 1, b: 1, a: 1}
-  lookLineLength: 2
-  lookLineHeight: 1
-  player: {fileID: 0}
-  moveSpeed: 3.5
-  attackRange: 3
-  spawnDelay: 3
-  navMeshSearchRadius: 5
-  normalDamage: 25
-  slamDamage: 40
-  slamRadius: 5
-  attackCooldown: 2.5
-  attackWindup: 0.5
-  skeletonPrefab: {fileID: 3423787796635671174, guid: 7d114ac183f97d548b4d3869c1d2ea9c, type: 3}
-  minSkeletons: 3
-  maxSkeletons: 5
-  summonCooldown: 15
-  summonRadius: 5
-  maxAliveSkeletons: 12
-  rageMode: 0
-  rageSpeedMultiplier: 1.5
-  rageDamageMultiplier: 1.5
-  rageCooldownMultiplier: 0.7
 --- !u!195 &562155511
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -297,6 +258,63 @@ NavMeshAgent:
   m_BaseOffset: -0.28
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &562155518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 562155501}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29351ba43a40ed84d9ac0fe726ac5c7d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Boss
+  maxHealth: 100
+  currentHealth: 0
+  immortal: 0
+  showLookDirection: 1
+  lookLineColor: {r: 0, g: 1, b: 1, a: 1}
+  lookLineLength: 2
+  lookLineHeight: 3.11
+  player: {fileID: 0}
+  speed: 3.8
+  spawnWait: 2
+  navMeshSnapRadius: 5
+  meleeRange: 3
+  comboHitDamage: 12
+  slamDamage: 38
+  slamRadius: 5.5
+  dashDamage: 26
+  fireballDamage: 22
+  projectileSpeed: 16
+  actionCooldown: 2
+  skeletonPrefab: {fileID: 3423787796635671174, guid: 7d114ac183f97d548b4d3869c1d2ea9c, type: 3}
+  minimumSummons: 3
+  maximumSummons: 5
+  maxLivingSummons: 12
+  summonInterval: 18
+  summonRadius: 5
+  fireballPrefab: {fileID: 3971393549214467619, guid: 094046a710b115044b26e5fec613b34a, type: 3}
+  fireballImpactPrefab: {fileID: 6124962163889018337, guid: 788873ac697d02e48aec1a44c85a0c35, type: 3}
+  spawnVFX: {fileID: 8345150241195054767, guid: 01c14a599f33ca34585881f97449aae5, type: 3}
+  comboVFX: {fileID: 2901129200754526827, guid: 5bd41ce635353b740a3dc8ef5ec176d9, type: 3}
+  slamVFX: {fileID: 3325804751947972014, guid: 411b0008ffebd364195d05e7ac25028d, type: 3}
+  summonVFX: {fileID: 6390483631462542450, guid: 880fa60cfac450d48a2e03d018bb542f, type: 3}
+  dashVFX: {fileID: 3551425189579099536, guid: 2fb411b2af09072459886f83d93f8715, type: 3}
+  rageVFX: {fileID: 3249967093102833507, guid: 1873f7b20f8fa3e4eb4e259851eb0b45, type: 3}
+  animator: {fileID: 0}
+  startEnraged: 0
+  rageSpeedMultiplier: 1.5
+  rageDamageMultiplier: 1.5
+  bossMaxHealth: 1000
+  phaseTwoAt: 0.65
+  phaseThreeAt: 0.3
+  strafeDistance: 7
+  strafeInterval: 3
+  dodgeCooldown: 8
+  dodgeDistance: 4
+  debugBoss: 0
 --- !u!1001 &601704269
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -463,7 +481,7 @@ PrefabInstance:
       addedObject: {fileID: 562155511}
     - targetCorrespondingSourceObject: {fileID: 6847128839456658298, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 562155510}
+      addedObject: {fileID: 562155518}
   m_SourcePrefab: {fileID: 100100000, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
 --- !u!1 &977840419
 GameObject:
@@ -781,6 +799,64 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
+--- !u!1001 &1308975177
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3.8031528
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.943
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 18.988121
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+      propertyPath: m_Name
+      value: Fireball_Magma_Core
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects:
+    - {fileID: 8164078558771037576, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 4c5f1b5bba9a9b241b8e1f8e130dbba1, type: 3}
 --- !u!1 &1424406723
 GameObject:
   m_ObjectHideFlags: 0
@@ -975,3 +1051,4 @@ SceneRoots:
   - {fileID: 1424406725}
   - {fileID: 2871184225391579915}
   - {fileID: 1580005582}
+  - {fileID: 1308975177}
