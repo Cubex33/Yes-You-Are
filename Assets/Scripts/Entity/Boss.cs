@@ -140,6 +140,26 @@ public class Boss : Entity
     [SerializeField] private float ringSpawnRadius = 2.5f;
     [SerializeField] private float ringWindup = 0.7f;
 
+    [Header("RAGE CHAOS - Homing Knives")]
+    [SerializeField] private bool enableRageKnifeStorm = true;
+    [Tooltip("Optional knife model prefab. Its forward (blue Z) points toward the tip.")]
+    [SerializeField] private GameObject knifePrefab;
+    [SerializeField] private float rageKnifeInterval = 2.2f;
+    [SerializeField] private int rageKnivesPerVolley = 8;
+    [SerializeField] private float rageKnifeSpeed = 23f;
+    [SerializeField] private float rageKnifeDamage = 15f;
+    [SerializeField] private float rageKnifeLifetime = 4.5f;
+    [SerializeField] private float rageKnifeTurnSpeed = 8f;
+    [SerializeField] private float rageKnifeHitRadius = 0.9f;
+    [SerializeField] private float rageKnifeLaunchDelay = 0.33f;
+    [SerializeField] private float rageKnifeSpreadRadius = 3f;
+    [Header("RAGE CHAOS - More Pressure")]
+    [SerializeField] private float rageBeamCooldownMultiplier = 0.42f;
+    [SerializeField] private float rageRingCooldownMultiplier = 0.5f;
+    [SerializeField] private float rageSummonIntervalMultiplier = 0.65f;
+    private float nextKnifeStorm;
+    private readonly List<GameObject> activeKnifeVisuals = new List<GameObject>();
+
     private float nextBeamAttack;
     private float nextRingAttack;
     private readonly List<GameObject> beamVisuals = new List<GameObject>();
@@ -200,6 +220,7 @@ public class Boss : Entity
         OnDamageTaken -= HandleBossDamage;
         OnDeath -= HandleBossDeath;
         ClearBeamVisuals();
+        ClearKnifeVisuals();
     }
 
     private void HandleBossDamage(float amount, object source)
@@ -268,6 +289,7 @@ public class Boss : Entity
 
         nextAction = availableAt + 0.5f;
         nextSummon = availableAt + summonInterval;
+        nextKnifeStorm = availableAt + 1.4f;
         nextBeamAttack = availableAt + 4f;
         nextRingAttack = availableAt + 2.5f;
 
@@ -312,6 +334,7 @@ public class Boss : Entity
         // Stop every current attack
         StopAllCoroutines();
         ClearBeamVisuals();
+        ClearKnifeVisuals();
 
         acting = false;
         stunned = false;
@@ -411,6 +434,16 @@ public class Boss : Entity
 
         SamplePlayerMotion();
 
+        // Knife storms are independent of the main attack animation.
+        // They continue while the boss casts beams or other attacks.
+        if (enraged && enableRageKnifeStorm &&
+            Time.time >= nextKnifeStorm &&
+            FlatDistance(transform.position, player.position) <= 38f)
+        {
+            nextKnifeStorm = Time.time + Mathf.Max(.6f, rageKnifeInterval);
+            StartCoroutine(RageKnifeStorm());
+        }
+
         if (agent == null || !agent.enabled)
             return;
 
@@ -467,7 +500,7 @@ public class Boss : Entity
             skeletonPrefab != null &&
             summons.Count < maxLivingSummons)
         {
-            nextSummon = Time.time + summonInterval;
+            nextSummon = Time.time + summonInterval * (enraged ? rageSummonIntervalMultiplier : 1f);
 
             StartCoroutine(SummonAttack());
             return;
@@ -479,13 +512,13 @@ public class Boss : Entity
             if (enableDeathBeams && playerDistance <= 35f &&
                 Time.time >= nextBeamAttack)
             {
-                nextBeamAttack = Time.time + beamCooldown * (enraged ? 0.7f : 1f);
+                nextBeamAttack = Time.time + beamCooldown * (enraged ? rageBeamCooldownMultiplier : 1f);
                 StartCoroutine(DeathBeamAttack());
             }
             else if (enableFireballRing && fireballPrefab != null &&
                      playerDistance <= 22f && Time.time >= nextRingAttack)
             {
-                nextRingAttack = Time.time + fireballRingCooldown * (enraged ? 0.7f : 1f);
+                nextRingAttack = Time.time + fireballRingCooldown * (enraged ? rageRingCooldownMultiplier : 1f);
                 StartCoroutine(FireballRingAttack());
             }
             else if (playerDistance > 6f &&
@@ -1574,6 +1607,10 @@ public class Boss : Entity
             return;
 
         enraged = true;
+        nextKnifeStorm = Time.time + 0.8f;
+        nextBeamAttack = Mathf.Min(nextBeamAttack, Time.time + 1.5f);
+        nextRingAttack = Mathf.Min(nextRingAttack, Time.time + 2.5f);
+        nextSummon = Mathf.Min(nextSummon, Time.time + 3f);
 
         Animate("Rage");
 
@@ -1594,6 +1631,121 @@ public class Boss : Entity
     }
 
     // ==========================================
+    // RAGE KNIVES: multiple homing volleys, even during other attacks.
+    // ==========================================
+
+    private GameObject CreateRageKnife(Vector3 location)
+    {
+        GameObject knife;
+        if (knifePrefab != null)
+        {
+            knife = Instantiate(knifePrefab, location, Quaternion.identity);
+        }
+        else
+        {
+            // Fallback visible blade when no prefab has been assigned.
+            knife = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            knife.transform.position = location;
+            knife.transform.localScale = new Vector3(.13f, .15f, 1.25f);
+            Renderer rend = knife.GetComponent<Renderer>();
+            if (rend != null)
+                rend.material = MakeBeamMaterial(new Color(1f, .12f, .04f));
+        }
+        knife.name = "Rage_Homing_Knife";
+        foreach (Collider c in knife.GetComponentsInChildren<Collider>())
+            c.enabled = false; // Damage is handled by the boss, not by physics callbacks.
+        activeKnifeVisuals.Add(knife);
+        return knife;
+    }
+
+    private void ClearKnifeVisuals()
+    {
+        foreach (GameObject obj in activeKnifeVisuals)
+            if (obj != null) Destroy(obj);
+        activeKnifeVisuals.Clear();
+    }
+
+    private IEnumerator RageKnifeStorm()
+    {
+        if (!enraged || isDown || defeated || player == null) yield break;
+        int count = Mathf.Clamp(rageKnivesPerVolley, 1, 32);
+        // A staggered second wave makes jumping through the first volley risky.
+        int waves = phase >= 3 ? 2 : 1;
+        for (int wave = 0; wave < waves; wave++)
+        {
+            if (isDown || defeated || player == null) yield break;
+            for (int i = 0; i < count; i++)
+            {
+                float angle = (i + wave * .5f) * Mathf.PI * 2f / count;
+                Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                Vector3 spawn = transform.position + offset * rageKnifeSpreadRadius +
+                    Vector3.up * (1.7f + (i % 3) * .55f);
+                StartCoroutine(FlyRageKnife(spawn, i * .04f));
+            }
+            if (wave + 1 < waves) yield return new WaitForSeconds(.65f);
+        }
+    }
+
+    private IEnumerator FlyRageKnife(Vector3 spawn, float additionalDelay)
+    {
+        GameObject knife = CreateRageKnife(spawn);
+        float windup = Mathf.Max(.08f, rageKnifeLaunchDelay) + additionalDelay;
+        float t = 0f;
+        while (t < windup && knife != null && !isDown && !defeated)
+        {
+            t += Time.deltaTime;
+            knife.transform.Rotate(0f, 150f * Time.deltaTime, 0f, Space.World);
+            yield return null;
+        }
+        if (knife == null || isDown || defeated || player == null)
+        {
+            RemoveKnife(knife);
+            yield break;
+        }
+
+        Vector3 direction = (player.position + Vector3.up - knife.transform.position).normalized;
+        float life = 0f;
+        while (life < Mathf.Max(.2f, rageKnifeLifetime) &&
+            knife != null && !isDown && !defeated && player != null)
+        {
+            float dt = Time.deltaTime;
+            life += dt;
+            Vector3 target = player.position + Vector3.up * 1.05f + playerVelocity * .13f;
+            Vector3 desired = target - knife.transform.position;
+            if (desired.sqrMagnitude > .001f)
+                direction = Vector3.Slerp(direction, desired.normalized,
+                    Mathf.Clamp01(rageKnifeTurnSpeed * dt)).normalized;
+            knife.transform.rotation = Quaternion.LookRotation(direction);
+            Vector3 previous = knife.transform.position;
+            Vector3 next = previous + direction * rageKnifeSpeed * dt;
+            knife.transform.position = next;
+
+            // Segment distance prevents fast blades tunneling past the player.
+            Vector3 segment = next - previous;
+            float u = segment.sqrMagnitude > .00001f ?
+                Mathf.Clamp01(Vector3.Dot(target - previous, segment) / segment.sqrMagnitude) : 0f;
+            Vector3 closest = previous + segment * u;
+            if (Vector3.Distance(closest, target) <= rageKnifeHitRadius)
+            {
+                if (playerEntity == null) playerEntity = player.GetComponentInParent<Entity>();
+                if (playerEntity != null)
+                    playerEntity.TakeDamage(Damage(rageKnifeDamage), this);
+                PlayOnce(fireballImpactPrefab, next);
+                break;
+            }
+            yield return null;
+        }
+        RemoveKnife(knife);
+    }
+
+    private void RemoveKnife(GameObject knife)
+    {
+        if (knife == null) return;
+        activeKnifeVisuals.Remove(knife);
+        Destroy(knife);
+    }
+
+    // ==========================================
     // DEATH
     // ==========================================
 
@@ -1609,6 +1761,7 @@ public class Boss : Entity
 
         StopAllCoroutines();
         ClearBeamVisuals();
+        ClearKnifeVisuals();
 
         StopAgent();
 
