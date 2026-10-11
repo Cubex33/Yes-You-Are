@@ -24,6 +24,16 @@ namespace Lucy.Core
       if (hideParentRenderers) HideRenderersRecursively(transform);
       base.HandleDeath(source);
     }
+
+    private void Start()
+    {
+        foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+    }
+
     private void DetachAndScatter()
     {
       List<Transform> fragments = new();
@@ -48,6 +58,11 @@ namespace Lucy.Core
         GameObject go = frag.gameObject;
         SetupFragmentPhysics(go);
         Rigidbody rb = go.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+        }
         if (rb != null)
         {
           float forceToApply = explosionForce + ((randomExtraForce > 0f) ? Random.Range(0f, randomExtraForce) : 0f);
