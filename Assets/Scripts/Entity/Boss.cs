@@ -10,26 +10,26 @@ public class Boss : Entity
 {
     [Header("Target & NavMesh")]
     [SerializeField] private Transform player;
-    [SerializeField] private float speed = 3.8f;
+    [SerializeField] private float speed = 5.4f;
     [SerializeField] private float spawnWait = 2f;
     [SerializeField] private float navMeshSnapRadius = 5f;
     [SerializeField] private float meleeRange = 3f;
 
     [Header("Damage / timings")]
-    [SerializeField] private float comboHitDamage = 12f;
-    [SerializeField] private float slamDamage = 38f;
-    [SerializeField] private float slamRadius = 5.5f;
-    [SerializeField] private float dashDamage = 26f;
-    [SerializeField] private float fireballDamage = 22f;
-    [SerializeField] private float projectileSpeed = 16f;
-    [SerializeField] private float actionCooldown = 2f;
+    [SerializeField] private float comboHitDamage = 19f;
+    [SerializeField] private float slamDamage = 48f;
+    [SerializeField] private float slamRadius = 6.5f;
+    [SerializeField] private float dashDamage = 34f;
+    [SerializeField] private float fireballDamage = 28f;
+    [SerializeField] private float projectileSpeed = 24f;
+    [SerializeField] private float actionCooldown = 0.9f;
 
     [Header("Skeletons")]
     [SerializeField] private GameObject skeletonPrefab;
     [SerializeField] private int minimumSummons = 3;
     [SerializeField] private int maximumSummons = 5;
     [SerializeField] private int maxLivingSummons = 12;
-    [SerializeField] private float summonInterval = 18f;
+    [SerializeField] private float summonInterval = 13f;
     [SerializeField] private float summonRadius = 5f;
 
     [Header("Fireball Height")]
@@ -51,8 +51,8 @@ public class Boss : Entity
     [SerializeField] private bool useDamageReactions = true;
     [SerializeField] private float heavyHitThreshold = 35f;
     [SerializeField] private float staggerThreshold = 80f;
-    [SerializeField] private float staggerDuration = 1.2f;
-    [SerializeField] private float reactionCooldown = 0.6f;
+    [SerializeField] private float staggerDuration = 0.55f;
+    [SerializeField] private float reactionCooldown = 2.5f;
 
     [Header("Ground Slam")]
     [SerializeField] private InfernoGroundSlam groundSlamPrefab;
@@ -89,6 +89,55 @@ public class Boss : Entity
     [Header("Low Health - Disable Boss")]
     [SerializeField, Range(0f, 1f)]
     private float disableAtHealth = 0.10f;
+
+    [Header("HARDCORE - Difficulty")]
+    [SerializeField] private bool applyHardcoreStatsAtRuntime = true;
+
+    [Header("HARDCORE - Anti Air / Predictive AI")]
+    [SerializeField] private bool enableAntiAir = true;
+    [SerializeField] private float airborneHeight = 1.35f;
+    [SerializeField] private float antiAirRange = 22f;
+    [SerializeField] private float antiAirDamage = 42f;
+    [SerializeField] private float antiAirRadius = 3.2f;
+    [SerializeField] private float antiAirWarning = 0.48f;
+    [SerializeField] private float antiAirCooldown = 3.7f;
+    [SerializeField] private float predictionSeconds = 0.45f;
+    [SerializeField] private float maxPredictedSpeed = 13f;
+    [SerializeField] private float dashSpeed = 23f;
+    [SerializeField] private float dashSteering = 9f;
+
+    [Header("DEATH BEAMS - Sky to Ground")]
+    [SerializeField] private bool enableDeathBeams = true;
+    [SerializeField] private int beamCount = 2;
+    [SerializeField] private int rageBeamCount = 5;
+    [SerializeField] private float beamCooldown = 11f;
+    [SerializeField] private float beamDamage = 17f;
+    [SerializeField] private float beamHeight = 24f;
+    [SerializeField] private float beamRadius = 0.85f;
+    [SerializeField] private float beamDuration = 5f;
+    [SerializeField] private float beamWarning = 0.8f;
+    [SerializeField] private float beamFollowSpeed = 5.5f;
+    [SerializeField] private float beamTickInterval = 0.65f;
+    [SerializeField] private float beamSpread = 3.2f;
+    [SerializeField] private Color beamColor = new Color(1f, 0.06f, 0.02f, 1f);
+
+    [Header("FIREBALL RING - Radial Barrage")]
+    [SerializeField] private bool enableFireballRing = true;
+    [SerializeField] private float fireballRingCooldown = 8f;
+    [SerializeField] private int ringFireballCount = 12;
+    [SerializeField] private int rageRingFireballCount = 22;
+    [SerializeField] private float ringFireballSpeed = 22f;
+    [SerializeField] private float ringSpawnRadius = 2.5f;
+    [SerializeField] private float ringWindup = 0.7f;
+
+    private float nextBeamAttack;
+    private float nextRingAttack;
+    private readonly List<GameObject> beamVisuals = new List<GameObject>();
+
+    private Vector3 previousPlayerPosition;
+    private Vector3 playerVelocity;
+    private bool hasPlayerSample;
+    private float nextAntiAir;
 
     private bool isDown = false;
 
@@ -140,6 +189,7 @@ public class Boss : Entity
     {
         OnDamageTaken -= HandleBossDamage;
         OnDeath -= HandleBossDeath;
+        ClearBeamVisuals();
     }
 
     private void HandleBossDamage(float amount, object source)
@@ -160,6 +210,27 @@ public class Boss : Entity
     {
         trackedHealth = Health;
 
+        // Overrides previous Inspector-serialized values on existing prefabs.
+        // Disable this checkbox to tune every stat manually instead.
+        if (applyHardcoreStatsAtRuntime)
+        {
+            speed = 5.4f;
+            comboHitDamage = 19f;
+            slamDamage = 48f;
+            slamRadius = 6.5f;
+            dashDamage = 34f;
+            fireballDamage = 28f;
+            projectileSpeed = 24f;
+            actionCooldown = 0.9f;
+            summonInterval = 13f;
+            staggerDuration = 0.55f;
+            reactionCooldown = 2.5f;
+            minimumSummons = 4;
+            maximumSummons = 6;
+            rageSpeedMultiplier = 1.65f;
+            rageDamageMultiplier = 1.6f;
+        }
+
         agent = GetComponent<NavMeshAgent>();
 
         agent.speed = speed;
@@ -176,12 +247,19 @@ public class Boss : Entity
             animator = GetComponentInChildren<Animator>();
 
         FindPlayer();
+        if (player != null)
+        {
+            previousPlayerPosition = player.position;
+            hasPlayerSample = true;
+        }
         SnapToNavMesh();
 
         availableAt = Time.time + Mathf.Max(0f, spawnWait);
 
         nextAction = availableAt + 0.5f;
         nextSummon = availableAt + summonInterval;
+        nextBeamAttack = availableAt + 4f;
+        nextRingAttack = availableAt + 2.5f;
 
         if (agent.isOnNavMesh)
             agent.isStopped = true;
@@ -223,6 +301,7 @@ public class Boss : Entity
 
         // Stop every current attack
         StopAllCoroutines();
+        ClearBeamVisuals();
 
         acting = false;
         stunned = false;
@@ -320,6 +399,8 @@ public class Boss : Entity
         if (player == null)
             return;
 
+        SamplePlayerMotion();
+
         if (agent == null || !agent.enabled)
             return;
 
@@ -340,8 +421,17 @@ public class Boss : Entity
             return;
         }
 
-        float playerDistance =
-            Vector3.Distance(transform.position, player.position);
+        float playerDistance = FlatDistance(transform.position, player.position);
+
+        // Repeated jumping is dangerous: an air burst targets the predicted landing area.
+        if (enableAntiAir && IsPlayerAirborne() &&
+            playerDistance <= antiAirRange && Time.time >= nextAntiAir &&
+            Time.time >= nextAction)
+        {
+            nextAntiAir = Time.time + antiAirCooldown;
+            StartCoroutine(AntiAirAttack());
+            return;
+        }
 
         // Dodge
         if (Time.time >= nextDodge &&
@@ -376,7 +466,19 @@ public class Boss : Entity
         // Attack selection
         if (Time.time >= nextAction)
         {
-            if (playerDistance > 6f &&
+            if (enableDeathBeams && playerDistance <= 35f &&
+                Time.time >= nextBeamAttack)
+            {
+                nextBeamAttack = Time.time + beamCooldown * (enraged ? 0.7f : 1f);
+                StartCoroutine(DeathBeamAttack());
+            }
+            else if (enableFireballRing && fireballPrefab != null &&
+                     playerDistance <= 22f && Time.time >= nextRingAttack)
+            {
+                nextRingAttack = Time.time + fireballRingCooldown * (enraged ? 0.7f : 1f);
+                StartCoroutine(FireballRingAttack());
+            }
+            else if (playerDistance > 6f &&
                 playerDistance <= 25f &&
                 fireballPrefab != null)
             {
@@ -621,6 +723,84 @@ public class Boss : Entity
     }
 
     // ==========================================
+    // HARDCORE: PLAYER TRACKING + ANTI-AIR
+    // ==========================================
+
+    private static float FlatDistance(Vector3 a, Vector3 b)
+    {
+        a.y = b.y = 0f;
+        return Vector3.Distance(a, b);
+    }
+
+    private void SamplePlayerMotion()
+    {
+        if (player == null) return;
+        if (!hasPlayerSample)
+        {
+            previousPlayerPosition = player.position;
+            hasPlayerSample = true;
+            return;
+        }
+        float dt = Mathf.Max(0.001f, Time.deltaTime);
+        Vector3 measured = (player.position - previousPlayerPosition) / dt;
+        measured = Vector3.ClampMagnitude(measured, maxPredictedSpeed);
+        playerVelocity = Vector3.Lerp(playerVelocity, measured,
+            Mathf.Clamp01(dt * 12f));
+        previousPlayerPosition = player.position;
+    }
+
+    private Vector3 PredictPlayer(float seconds)
+    {
+        if (player == null) return transform.position;
+        Vector3 travel = playerVelocity * Mathf.Clamp(seconds, 0f, 1.25f);
+        travel = Vector3.ClampMagnitude(travel, maxPredictedSpeed * 1.25f);
+        return player.position + travel;
+    }
+
+    private bool IsPlayerAirborne()
+    {
+        if (player == null) return false;
+        // Check floor under feet and ignore colliders belonging to the player.
+        Vector3 from = player.position + Vector3.up * 0.15f;
+        RaycastHit[] hits = Physics.RaycastAll(from, Vector3.down,
+            airborneHeight + 0.15f, Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore);
+        foreach (RaycastHit hit in hits)
+        {
+            if (hit.transform == player || hit.transform.IsChildOf(player)) continue;
+            if (hit.distance <= airborneHeight + 0.15f) return false;
+        }
+        return true;
+    }
+
+    private IEnumerator AntiAirAttack()
+    {
+        acting = true;
+        StopAgent();
+        Animate("Fireball");
+
+        // Lock target early: player has time to change direction and evade.
+        Vector3 target = PredictPlayer(predictionSeconds);
+        target = GroundPoint(target);
+        PlayOnce(summonVFX, target);
+        yield return new WaitForSeconds(Mathf.Max(0.15f, antiAirWarning));
+
+        if (defeated || isDown || player == null) yield break;
+        PlayOnce(slamImpactVFX != null ? slamImpactVFX : slamVFX, target);
+        if (createFallbackShockwave)
+            StartCoroutine(ShockwaveRing(target + Vector3.up * 0.08f, antiAirRadius));
+
+        if (FlatDistance(player.position, target) <= antiAirRadius &&
+            Mathf.Abs(player.position.y - target.y) <= 7f)
+        {
+            if (playerEntity == null) playerEntity = player.GetComponentInParent<Entity>();
+            if (playerEntity != null)
+                playerEntity.TakeDamage(Damage(antiAirDamage), this);
+        }
+        MarkRecovery(0.45f);
+    }
+
+    // ==========================================
     // DAMAGE
     // ==========================================
 
@@ -643,7 +823,8 @@ public class Boss : Entity
 
         flat.y = 0f;
 
-        if (flat.magnitude > range)
+        if (flat.magnitude > range ||
+            Mathf.Abs(player.position.y - transform.position.y) > 5f)
             return;
 
         if (requireFront &&
@@ -719,11 +900,11 @@ public class Boss : Entity
         StopAgent();
         Animate("Combo");
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < (phase >= 3 ? 5 : phase == 2 ? 4 : 3); i++)
         {
             FaceTarget();
 
-            yield return new WaitForSeconds(0.32f);
+            yield return new WaitForSeconds(phase >= 2 ? 0.20f : 0.27f);
 
             if (defeated || isDown)
                 yield break;
@@ -772,13 +953,19 @@ public class Boss : Entity
 
         PlayOnce(summonVFX, impactPoint);
 
-        yield return new WaitForSeconds(1.25f);
+        yield return new WaitForSeconds(phase >= 3 ? 0.65f : 0.9f);
 
         if (defeated || isDown)
             yield break;
 
         if (groundSlamPrefab != null)
         {
+            // Ground-slam prefab handles ground hits; add aerial impact against jump spam.
+            if (IsPlayerAirborne() &&
+                FlatDistance(impactPoint, player.position) <= slamRadius &&
+                Mathf.Abs(player.position.y - impactPoint.y) <= 5f)
+                HitPlayer(slamRadius, slamDamage * 0.75f, false);
+
             Instantiate(
                 groundSlamPrefab,
                 impactPoint,
@@ -836,10 +1023,10 @@ public class Boss : Entity
         StopAgent();
         Animate("Fireball");
 
-        yield return new WaitForSeconds(0.65f);
+        yield return new WaitForSeconds(phase >= 2 ? 0.32f : 0.46f);
 
         int spreadCount =
-            phase >= 3 ? 5 : 3;
+            phase >= 3 ? 7 : phase == 2 ? 5 : 4;
 
         for (int i = 0; i < spreadCount; i++)
         {
@@ -852,8 +1039,10 @@ public class Boss : Entity
                 transform.position +
                 Vector3.up * fireballHeight;
 
-            Vector3 aim =
-                (player.position - origin).normalized;
+            float travel = Vector3.Distance(origin, player.position) /
+                Mathf.Max(1f, projectileSpeed);
+            Vector3 predicted = PredictPlayer(Mathf.Min(1.1f, travel));
+            Vector3 aim = (predicted + Vector3.up * 0.9f - origin).normalized;
 
             Vector3 spread =
                 Quaternion.AngleAxis(
@@ -878,10 +1067,199 @@ public class Boss : Entity
                 enraged ? 12f : 0f
             );
 
-            yield return new WaitForSeconds(0.18f);
+            yield return new WaitForSeconds(phase >= 3 ? 0.10f : 0.14f);
         }
 
         MarkRecovery(actionCooldown + 0.5f);
+    }
+
+    // ==========================================
+    // DEATH BEAMS: independent tracking pillars from the sky
+    // ==========================================
+
+    private Material MakeBeamMaterial(Color color)
+    {
+        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null) shader = Shader.Find("Sprites/Default");
+        if (shader == null) return null;
+        Material mat = new Material(shader);
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+        if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+        if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
+        return mat;
+    }
+
+    private GameObject CreateBeamVisual(string name, Color color, float width)
+    {
+        GameObject obj = new GameObject(name);
+        beamVisuals.Add(obj);
+        LineRenderer lr = obj.AddComponent<LineRenderer>();
+        lr.useWorldSpace = true;
+        lr.positionCount = 2;
+        lr.startWidth = width;
+        lr.endWidth = width;
+        lr.numCapVertices = 8;
+        lr.material = MakeBeamMaterial(color);
+        return obj;
+    }
+
+    private void RemoveBeamVisual(GameObject obj)
+    {
+        if (obj == null) return;
+        beamVisuals.Remove(obj);
+        LineRenderer lr = obj.GetComponent<LineRenderer>();
+        if (lr != null && lr.material != null) Destroy(lr.material);
+        Destroy(obj);
+    }
+
+    private void ClearBeamVisuals()
+    {
+        foreach (GameObject obj in beamVisuals)
+        {
+            if (obj == null) continue;
+            LineRenderer lr = obj.GetComponent<LineRenderer>();
+            if (lr != null && lr.material != null) Destroy(lr.material);
+            Renderer renderer = obj.GetComponent<Renderer>();
+            if (renderer != null && lr == null && renderer.material != null) Destroy(renderer.material);
+            Destroy(obj);
+        }
+        beamVisuals.Clear();
+    }
+
+    private IEnumerator DeathBeamAttack()
+    {
+        acting = true;
+        StopAgent();
+        Animate("Slam");
+        int count = enraged ? rageBeamCount : beamCount;
+        count = Mathf.Clamp(count, 1, 12);
+        Vector3[] centers = new Vector3[count];
+        Vector3[] offsets = new Vector3[count];
+        GameObject[] pillars = new GameObject[count];
+        GameObject[] warnings = new GameObject[count];
+        float[] nextHit = new float[count];
+
+        // Offset beams so that dodging one can lead into another.
+        for (int i = 0; i < count; i++)
+        {
+            float angle = (i * Mathf.PI * 2f / count) + 0.3f;
+            offsets[i] = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) *
+                (count == 2 ? beamSpread * 0.65f : beamSpread);
+            centers[i] = GroundPoint(PredictPlayer(0.25f) + offsets[i]);
+            warnings[i] = CreateBeamVisual("DeathBeam_Warning", new Color(1f, .55f, .03f), .18f);
+            LineRenderer warningLine = warnings[i].GetComponent<LineRenderer>();
+            warningLine.SetPosition(0, centers[i] + Vector3.up * .04f);
+            warningLine.SetPosition(1, centers[i] + Vector3.up * beamHeight);
+        }
+        yield return new WaitForSeconds(Mathf.Max(.15f, beamWarning));
+        for (int i = 0; i < count; i++) RemoveBeamVisual(warnings[i]);
+        if (isDown || defeated || player == null) yield break;
+
+        for (int i = 0; i < count; i++)
+        {
+            pillars[i] = CreateBeamVisual("DEATH_BEAM_" + i, beamColor, beamRadius * 2f);
+            PlayOnce(slamImpactVFX != null ? slamImpactVFX : slamVFX, centers[i]);
+        }
+
+        float elapsed = 0f;
+        while (elapsed < beamDuration && !defeated && !isDown && player != null)
+        {
+            float dt = Time.deltaTime;
+            elapsed += dt;
+            Vector3 predicted = PredictPlayer(.22f);
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 destination = GroundPoint(predicted + offsets[i]);
+                centers[i] = Vector3.MoveTowards(centers[i], destination,
+                    beamFollowSpeed * (enraged ? 1.45f : 1f) * dt);
+                LineRenderer line = pillars[i].GetComponent<LineRenderer>();
+                Vector3 basePoint = centers[i] + Vector3.up * .12f;
+                line.SetPosition(0, basePoint);
+                line.SetPosition(1, basePoint + Vector3.up * beamHeight);
+
+                // Horizontal collision works even when the player jumps.
+                if (Time.time >= nextHit[i] &&
+                    FlatDistance(player.position, centers[i]) <= beamRadius + .5f &&
+                    player.position.y >= centers[i].y - 1f &&
+                    player.position.y <= centers[i].y + beamHeight)
+                {
+                    if (playerEntity == null) playerEntity = player.GetComponentInParent<Entity>();
+                    if (playerEntity != null)
+                        playerEntity.TakeDamage(Damage(beamDamage), this);
+                    nextHit[i] = Time.time + Mathf.Max(.15f, beamTickInterval);
+                }
+            }
+            yield return null;
+        }
+        for (int i = 0; i < count; i++) RemoveBeamVisual(pillars[i]);
+        MarkRecovery(.45f);
+    }
+
+    // ==========================================
+    // RADIAL FIREBALL BARRAGE: surrounds boss and shoots outward
+    // ==========================================
+
+    private IEnumerator FireballRingAttack()
+    {
+        acting = true;
+        StopAgent();
+        Animate("Fireball");
+        PlayOnce(summonVFX, transform.position);
+        yield return new WaitForSeconds(Mathf.Max(.15f, ringWindup));
+        if (isDown || defeated || fireballPrefab == null) yield break;
+
+        int count = Mathf.Clamp(enraged ? rageRingFireballCount : ringFireballCount, 3, 60);
+        int waves = enraged ? 2 : 1;
+        for (int wave = 0; wave < waves; wave++)
+        {
+            if (isDown || defeated) yield break;
+            // Visual charging: fireballs assemble around the boss before launch.
+            GameObject[] previews = new GameObject[count];
+            for (int i = 0; i < count; i++)
+            {
+                float angle = (i + (wave == 1 ? .5f : 0f)) * Mathf.PI * 2f / count;
+                Vector3 direction = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                Vector3 origin = transform.position + direction * ringSpawnRadius +
+                    Vector3.up * fireballHeight;
+                GameObject orb = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                orb.name = "Boss_Charging_Fireball";
+                orb.transform.position = origin;
+                orb.transform.localScale = Vector3.one * .65f;
+                Collider c = orb.GetComponent<Collider>();
+                if (c != null) Destroy(c);
+                Material glow = MakeBeamMaterial(new Color(1f, .22f, .015f));
+                if (glow != null) orb.GetComponent<Renderer>().material = glow;
+                previews[i] = orb;
+                beamVisuals.Add(orb); // also removed if the boss dies mid-cast
+            }
+            float charge = 0f;
+            while (charge < .6f && !defeated && !isDown)
+            {
+                charge += Time.deltaTime;
+                for (int i = 0; i < count; i++)
+                    if (previews[i] != null)
+                        previews[i].transform.Rotate(Vector3.up, 150f * Time.deltaTime);
+                yield return null;
+            }
+            for (int i = 0; i < count; i++)
+            {
+                if (previews[i] == null) continue;
+                Vector3 origin = previews[i].transform.position;
+                Vector3 direction = origin - transform.position;
+                direction.y = 0f;
+                direction.Normalize();
+                beamVisuals.Remove(previews[i]);
+                Destroy(previews[i]);
+                if (isDown || defeated) continue;
+                FireballProjectile projectile = Instantiate(fireballPrefab,
+                    origin, Quaternion.LookRotation(direction));
+                projectile.Initialize(this, player, direction, Damage(fireballDamage),
+                    ringFireballSpeed * (enraged ? 1.2f : 1f),
+                    fireballImpactPrefab, 0f);
+            }
+            if (wave + 1 < waves) yield return new WaitForSeconds(.5f);
+        }
+        MarkRecovery(.6f);
     }
 
     // ==========================================
@@ -900,7 +1278,7 @@ public class Boss : Entity
 
         FaceTarget();
 
-        yield return new WaitForSeconds(0.6f);
+        yield return new WaitForSeconds(phase >= 3 ? 0.24f : 0.40f);
 
         if (defeated || isDown || player == null)
             yield break;
@@ -910,13 +1288,14 @@ public class Boss : Entity
 
         heading.y = 0f;
         heading.Normalize();
+        if (heading.sqrMagnitude < 0.001f) heading = transform.forward;
 
         HashSet<Entity> hit =
             new HashSet<Entity>();
 
         float elapsed = 0f;
 
-        while (elapsed < 0.42f &&
+        while (elapsed < (phase >= 3 ? 0.62f : 0.50f) &&
                agent.enabled &&
                agent.isOnNavMesh &&
                !isDown)
@@ -925,7 +1304,12 @@ public class Boss : Entity
 
             elapsed += dt;
 
-            agent.Move(heading * 13f * dt);
+            Vector3 desired = PredictPlayer(0.13f) - transform.position;
+            desired.y = 0f;
+            if (desired.sqrMagnitude > 0.01f)
+                heading = Vector3.Slerp(heading, desired.normalized,
+                    Mathf.Clamp01(dashSteering * dt)).normalized;
+            agent.Move(heading * dashSpeed * dt);
 
             if (Random.value < 0.4f)
                 PlayOnce(dashVFX, transform.position);
@@ -936,9 +1320,8 @@ public class Boss : Entity
 
             if (playerEntity != null &&
                 !hit.Contains(playerEntity) &&
-                Vector3.Distance(
-                    transform.position,
-                    player.position) < 2f)
+                FlatDistance(transform.position, player.position) < 2.6f &&
+                Mathf.Abs(transform.position.y - player.position.y) < 3.8f)
             {
                 hit.Add(playerEntity);
 
@@ -1059,7 +1442,7 @@ public class Boss : Entity
                 Time.time + reactionCooldown;
 
             if (amount >= staggerThreshold &&
-                !stunned)
+                !stunned && !acting)
             {
                 if (staggerRoutine != null)
                     StopCoroutine(staggerRoutine);
@@ -1151,6 +1534,7 @@ public class Boss : Entity
         acting = false;
 
         StopAllCoroutines();
+        ClearBeamVisuals();
 
         StopAgent();
 
