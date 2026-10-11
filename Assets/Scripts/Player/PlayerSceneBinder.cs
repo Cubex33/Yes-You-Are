@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.InputSystem;
 using Lucy.Core;
+using UnityEngine.SceneManagement;
 public class PlayerSceneBinder : MonoBehaviour
 {
     [Header("References")]
@@ -33,14 +34,7 @@ public class PlayerSceneBinder : MonoBehaviour
     }
     void RespawnPlayer()
     {
-        ResetDeathTimeline();
-        player.RespawnAt(spawnPoint);
-        playerController.enabled = true;
-        hud.gameObject.SetActive(true);
-        if (InputProvider.instance != null) {
-            InputProvider.Global.Controls.Cutscene.Disable();
-            InputProvider.Global.Controls.Player.Enable();
-        }
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
     void OnRespawnPressed(InputAction.CallbackContext ctx)
     {
