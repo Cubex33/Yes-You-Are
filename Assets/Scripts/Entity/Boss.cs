@@ -61,9 +61,11 @@ public class Boss : Entity
     [SerializeField] private float rageDamageMultiplier = 1.5f;
 
     [Header("Advanced boss: phase & AI")]
-    [SerializeField] private float bossMaxHealth = 1000f;
-    [SerializeField] private float phaseTwoAt = 0.65f;
-    [SerializeField] private float phaseThreeAt = 0.30f;
+    [SerializeField, Range(0f, 1f)]
+    private float phaseTwoAt = 0.65f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float phaseThreeAt = 0.30f;
     [SerializeField] private float strafeDistance = 7f;
     [SerializeField] private float strafeInterval = 3f;
     [SerializeField] private float dodgeCooldown = 8f;
@@ -88,9 +90,32 @@ public class Boss : Entity
     private bool stunned;
     private float availableAt, nextAction, nextSummon, retryNav;
 
+    private void OnEnable()
+    {
+        OnDamageTaken += HandleBossDamage;
+        OnDeath += HandleBossDeath;
+    }
+
+    private void OnDisable()
+    {
+        OnDamageTaken -= HandleBossDamage;
+        OnDeath -= HandleBossDeath;
+    }
+
+    private void HandleBossDamage(float amount, object source)
+    {
+        NotifyDamageTaken(amount);
+    }
+
+    private void HandleBossDeath(object source)
+    {
+        NotifyBossDeath();
+    }
+
     private void Start()
     {
-        trackedHealth = bossMaxHealth;
+        trackedHealth = Health;
+
         agent = GetComponent<NavMeshAgent>();
         agent.speed = speed;
         agent.acceleration = 12f;
@@ -411,7 +436,7 @@ public class Boss : Entity
     public void NotifyDamageTaken(float amount)
     {
         if (defeated || amount <= 0f) return;
-        trackedHealth = Mathf.Max(0f, trackedHealth - amount);
+        trackedHealth = Health;
         if (trackedHealth > 0f && useDamageReactions && Time.time >= nextReactionTime)
         {
             nextReactionTime = Time.time + reactionCooldown;
@@ -425,7 +450,7 @@ public class Boss : Entity
                 Animate(amount >= heavyHitThreshold ? "DamageHeavy" : "DamageLight");
             }
         }
-        float ratio = trackedHealth / Mathf.Max(1f, bossMaxHealth);
+        float ratio = trackedHealth / Mathf.Max(1f, MaxHealth);
         if (ratio <= phaseThreeAt && phase < 3)
         {
             phase = 3;

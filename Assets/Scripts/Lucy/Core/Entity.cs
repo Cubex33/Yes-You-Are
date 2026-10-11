@@ -61,10 +61,14 @@ namespace Lucy.Core
             OnHealed?.Invoke(amount, source);
         }
 
-        public virtual void SetMaxHealth(float newMaxHealth, bool fullHeal = true)
+        public virtual void SetMaxHealth(float newMaxHealth, bool fullHeal)
         {
             maxHealth = newMaxHealth;
-            if (fullHeal) currentHealth = maxHealth;
+
+            if (fullHeal)
+                currentHealth = maxHealth;
+            else
+                currentHealth = Mathf.Min(currentHealth, maxHealth);
         }
 
 
