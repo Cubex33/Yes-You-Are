@@ -110,7 +110,7 @@ public class Boss : Entity
     [SerializeField] private bool enableDeathBeams = true;
     [SerializeField] private int beamCount = 2;
     [SerializeField] private int rageBeamCount = 5;
-    [SerializeField] private float beamCooldown = 11f;
+    [SerializeField] private float beamCooldown = 18f;
     [SerializeField] private float beamDamage = 17f;
     [SerializeField] private float beamHeight = 24f;
     [SerializeField] private float beamRadius = 0.85f;
@@ -154,12 +154,21 @@ public class Boss : Entity
     [SerializeField] private float rageKnifeLaunchDelay = 0.33f;
     [SerializeField] private float rageKnifeSpreadRadius = 3f;
     [Header("RAGE CHAOS - More Pressure")]
-    [SerializeField] private float rageBeamCooldownMultiplier = 0.42f;
+    [SerializeField] private float rageBeamCooldownMultiplier = 0.8f;
     [SerializeField] private float rageRingCooldownMultiplier = 0.5f;
     [SerializeField] private float rageSummonIntervalMultiplier = 0.65f;
     private float nextKnifeStorm;
     private readonly List<GameObject> activeKnifeVisuals = new List<GameObject>();
 
+    [Header("RANDOM SKY BEAMS - Chase Player")]
+    [SerializeField] private float randomBeamSpawnMin = 4f;
+    [SerializeField] private float randomBeamSpawnMax = 13f;
+    [SerializeField] private float randomBeamChaseDelay = 0.55f;
+    [SerializeField] private float rageBeamFollowMultiplier = 1.7f;
+
+    // Fair rotation: attacks that have not been used recently have higher priority.
+    private readonly float[] attackLastUsed = new float[6];
+    private int lastAttackType = -1;
     private float nextBeamAttack;
     private float nextRingAttack;
     private readonly List<GameObject> beamVisuals = new List<GameObject>();
@@ -290,7 +299,9 @@ public class Boss : Entity
         nextAction = availableAt + 0.5f;
         nextSummon = availableAt + summonInterval;
         nextKnifeStorm = availableAt + 1.4f;
-        nextBeamAttack = availableAt + 4f;
+        nextBeamAttack = availableAt + 10f;
+        for (int i = 0; i < attackLastUsed.Length; i++)
+            attackLastUsed[i] = -100f;
         nextRingAttack = availableAt + 2.5f;
 
         if (agent.isOnNavMesh)
@@ -469,7 +480,7 @@ public class Boss : Entity
         // Repeated jumping is dangerous: an air burst targets the predicted landing area.
         if (enableAntiAir && IsPlayerAirborne() &&
             playerDistance <= antiAirRange && Time.time >= nextAntiAir &&
-            Time.time >= nextAction)
+            Time.time >= nextAction && Random.value < 0.28f)
         {
             nextAntiAir = Time.time + antiAirCooldown;
             StartCoroutine(AntiAirAttack());
@@ -506,47 +517,11 @@ public class Boss : Entity
             return;
         }
 
-        // Attack selection
+        // Balanced rotation of ALL abilities. Beams cannot dominate the fight.
         if (Time.time >= nextAction)
         {
-            if (enableDeathBeams && playerDistance <= 35f &&
-                Time.time >= nextBeamAttack)
-            {
-                nextBeamAttack = Time.time + beamCooldown * (enraged ? rageBeamCooldownMultiplier : 1f);
-                StartCoroutine(DeathBeamAttack());
-            }
-            else if (enableFireballRing && fireballPrefab != null &&
-                     playerDistance <= 22f && Time.time >= nextRingAttack)
-            {
-                nextRingAttack = Time.time + fireballRingCooldown * (enraged ? rageRingCooldownMultiplier : 1f);
-                StartCoroutine(FireballRingAttack());
-            }
-            else if (playerDistance > 6f &&
-                playerDistance <= 25f &&
-                fireballPrefab != null)
-            {
-                StartCoroutine(FireballVolley());
-            }
-            else if (playerDistance > meleeRange &&
-                     playerDistance <= 11f &&
-                     Random.value < 0.5f)
-            {
-                StartCoroutine(DashAttack());
-            }
-            else if (playerDistance <= slamRadius &&
-                     Random.value <
-                     (phase >= 2 ? 0.56f : 0.38f))
-            {
-                StartCoroutine(SlamAttack());
-            }
-            else if (playerDistance <= meleeRange)
-            {
-                StartCoroutine(ComboAttack());
-            }
-            else
-            {
+            if (!TryBalancedAttack(playerDistance))
                 Chase();
-            }
         }
         else if (playerDistance > meleeRange)
         {
@@ -565,6 +540,63 @@ public class Boss : Entity
             StopAgent();
             FaceTarget();
         }
+    }
+
+    // IDs: 0 beams, 1 fire ring, 2 volley, 3 dash, 4 slam, 5 combo.
+    private bool TryBalancedAttack(float distance)
+    {
+        List<int> options = new List<int>();
+        if (enableDeathBeams && distance <= 35f && Time.time >= nextBeamAttack)
+            options.Add(0);
+        if (enableFireballRing && fireballPrefab != null && distance <= 22f &&
+            Time.time >= nextRingAttack)
+            options.Add(1);
+        if (fireballPrefab != null && distance <= 32f && distance >= 3.5f)
+            options.Add(2);
+        if (distance > meleeRange * .7f && distance <= 17f)
+            options.Add(3);
+        if (distance <= slamRadius + 1.5f)
+            options.Add(4);
+        if (distance <= meleeRange + 1f)
+            options.Add(5);
+
+        if (options.Count == 0) return false;
+
+        // Prefer a move not used recently, but keep a little unpredictability.
+        int picked = -1;
+        float highestScore = float.NegativeInfinity;
+        foreach (int type in options)
+        {
+            float age = Mathf.Clamp(Time.time - attackLastUsed[type], 0f, 18f);
+            float score = age + Random.Range(0f, 3f);
+            if (type == lastAttackType && options.Count > 1) score -= 30f;
+            // Fireball volley and mobility moves should remain frequent.
+            if (type == 2 || type == 3) score += 1.5f;
+            if (score > highestScore) { highestScore = score; picked = type; }
+        }
+
+        if (picked < 0) return false;
+        lastAttackType = picked;
+        attackLastUsed[picked] = Time.time;
+
+        switch (picked)
+        {
+            case 0:
+                nextBeamAttack = Time.time + Mathf.Max(13f,
+                    beamCooldown * (enraged ? rageBeamCooldownMultiplier : 1f));
+                StartCoroutine(DeathBeamAttack());
+                break;
+            case 1:
+                nextRingAttack = Time.time + fireballRingCooldown *
+                    (enraged ? rageRingCooldownMultiplier : 1f);
+                StartCoroutine(FireballRingAttack());
+                break;
+            case 2: StartCoroutine(FireballVolley()); break;
+            case 3: StartCoroutine(DashAttack()); break;
+            case 4: StartCoroutine(SlamAttack()); break;
+            case 5: StartCoroutine(ComboAttack()); break;
+        }
+        return true;
     }
 
     // ==========================================
@@ -1185,10 +1217,17 @@ public class Boss : Entity
         // Offset beams so that dodging one can lead into another.
         for (int i = 0; i < count; i++)
         {
-            float angle = (i * Mathf.PI * 2f / count) + 0.3f;
-            offsets[i] = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) *
-                (count == 2 ? beamSpread * 0.65f : beamSpread);
-            centers[i] = GroundPoint(PredictPlayer(0.25f) + offsets[i]);
+            // Each laser drops in a DIFFERENT random place, then hunts the player.
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            float radius = Random.Range(
+                Mathf.Max(1f, randomBeamSpawnMin),
+                Mathf.Max(randomBeamSpawnMin + 0.1f, randomBeamSpawnMax));
+            centers[i] = GroundPoint(PredictPlayer(0.25f) +
+                new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius);
+            // Separate target offsets keep multiple beams surrounding the player.
+            float targetAngle = i * Mathf.PI * 2f / count + Random.Range(-.3f, .3f);
+            offsets[i] = new Vector3(Mathf.Cos(targetAngle), 0f,
+                Mathf.Sin(targetAngle)) * (count == 2 ? 1.3f : beamSpread * .5f);
             warnings[i] = CreateBeamVisual("DeathBeam_Warning", new Color(1f, .55f, .03f), .18f);
             LineRenderer warningLine = warnings[i].GetComponent<LineRenderer>();
             warningLine.SetPosition(0, centers[i] + Vector3.up * .04f);
@@ -1214,8 +1253,9 @@ public class Boss : Entity
             for (int i = 0; i < count; i++)
             {
                 Vector3 destination = GroundPoint(predicted + offsets[i]);
-                centers[i] = Vector3.MoveTowards(centers[i], destination,
-                    beamFollowSpeed * (enraged ? 1.45f : 1f) * dt);
+                if (elapsed >= randomBeamChaseDelay)
+                    centers[i] = Vector3.MoveTowards(centers[i], destination,
+                        beamFollowSpeed * (enraged ? rageBeamFollowMultiplier : 1f) * dt);
                 LineRenderer line = pillars[i].GetComponent<LineRenderer>();
                 Vector3 basePoint = centers[i] + Vector3.up * .12f;
                 line.SetPosition(0, basePoint);
@@ -1608,7 +1648,8 @@ public class Boss : Entity
 
         enraged = true;
         nextKnifeStorm = Time.time + 0.8f;
-        nextBeamAttack = Mathf.Min(nextBeamAttack, Time.time + 1.5f);
+        // Rage should not force an instant laser: keep time for other moves.
+        nextBeamAttack = Mathf.Max(nextBeamAttack, Time.time + 6f);
         nextRingAttack = Mathf.Min(nextRingAttack, Time.time + 2.5f);
         nextSummon = Mathf.Min(nextSummon, Time.time + 3f);
 
