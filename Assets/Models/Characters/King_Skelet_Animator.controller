@@ -48,7 +48,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: -2761275181403230479, guid: 6f1243e2eeb57774f921f47884d50d70, type: 3}
+  m_Motion: {fileID: 3173360298035391496, guid: 2a26834784a445c4f9acaa74dc9a3dec, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -61,7 +61,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: metarig|Side_Pose_King 0
+  m_Name: Dash
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -75,7 +75,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 4010773272678578895, guid: a3ce53701f247d445a2dafc17a6bfaab, type: 3}
+  m_Motion: {fileID: -3369816643372947731, guid: 2a26834784a445c4f9acaa74dc9a3dec, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -439,7 +439,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: metarig|Up_Skelets 0
+  m_Name: FireBall
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
@@ -657,7 +657,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 113958065355875055, guid: a3ce53701f247d445a2dafc17a6bfaab, type: 3}
+  m_Motion: {fileID: -7725855649270986892, guid: 2a26834784a445c4f9acaa74dc9a3dec, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
