@@ -1,6 +1,4 @@
-
-using UnityEngine;
-using Lucy.Core;
+﻿using UnityEngine;
 
 public class HealthPickup : MonoBehaviour
 {
@@ -13,21 +11,36 @@ public class HealthPickup : MonoBehaviour
     {
         if (collected) return;
 
-        Entity entity = other.GetComponentInParent<Entity>();
+        // Ищем Player на объекте коллайдера или выше по иерархии.
+        Player player = other.GetComponentInParent<Player>();
 
-        if (entity == null) return;
-
-        // ��������� ������ ����� � ����� Player.
-        if (!entity.CompareTag("Player")) return;
-
-        // �� ��������� �����, ���� �������� ��� ������.
-        if (entity.IsDead || entity.Health >= entity.MaxHealth)
+        if (player == null)
+        {
+            Debug.Log($"HealthPickup: Player не найден у {other.name}", this);
             return;
+        }
 
-        collected = true;
+        if (player.IsDead || player.Health >= player.MaxHealth)
+        {
+            Debug.Log("HealthPickup: здоровье полное или игрок мёртв.", this);
+            return;
+        }
 
-        entity.Heal(healAmount, this);
+        float oldHealth = player.Health;
 
-        Destroy(gameObject);
+        player.Heal(healAmount, this);
+
+        // Удаляем предмет только если здоровье действительно восстановилось.
+        if (player.Health > oldHealth)
+        {
+            collected = true;
+
+            Debug.Log(
+                $"Хилка подобрана! HP: {oldHealth} → {player.Health}/{player.MaxHealth}",
+                this
+            );
+
+            Destroy(gameObject);
+        }
     }
 }
