@@ -326,6 +326,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: MX
       objectReference: {fileID: 0}
+    - target: {fileID: 6917485106989853523, guid: b8907a5558cf6224d920817fb3e4ee92, type: 3}
+      propertyPath: ColorModule.enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6917485106989853523, guid: b8907a5558cf6224d920817fb3e4ee92, type: 3}
+      propertyPath: ShapeModule.enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6917485106989853523, guid: b8907a5558cf6224d920817fb3e4ee92, type: 3}
+      propertyPath: EmissionModule.enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6917485106989853523, guid: b8907a5558cf6224d920817fb3e4ee92, type: 3}
+      propertyPath: RotationModule.enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6917485106989853523, guid: b8907a5558cf6224d920817fb3e4ee92, type: 3}
+      propertyPath: VelocityModule.enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8394739048227403527, guid: b8907a5558cf6224d920817fb3e4ee92, type: 3}
       propertyPath: cinemachinePan
       value: 
@@ -392,6 +412,14 @@ PrefabInstance:
     - target: {fileID: 6074849891213232576, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: fireballHeight
+      value: 9.8
       objectReference: {fileID: 0}
     - target: {fileID: 6847128839456658298, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: m_Name
@@ -1006,13 +1034,29 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2297177044096252324, guid: 7d114ac183f97d548b4d3869c1d2ea9c, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2297177044096252324, guid: 7d114ac183f97d548b4d3869c1d2ea9c, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: ecddb1ac8070efb47b6f4090a1910edc, type: 2}
     - target: {fileID: 2708610120613829987, guid: 7d114ac183f97d548b4d3869c1d2ea9c, type: 3}
       propertyPath: player
       value: 
       objectReference: {fileID: 601704270}
+    - target: {fileID: 2708610120613829987, guid: 7d114ac183f97d548b4d3869c1d2ea9c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3423787796635671174, guid: 7d114ac183f97d548b4d3869c1d2ea9c, type: 3}
       propertyPath: m_Name
       value: Angry_Hoza
+      objectReference: {fileID: 0}
+    - target: {fileID: 5274037261499934927, guid: 7d114ac183f97d548b4d3869c1d2ea9c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

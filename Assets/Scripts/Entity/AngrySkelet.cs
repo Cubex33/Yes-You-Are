@@ -1,4 +1,4 @@
-
+using System.Collections.Generic;
 using Lucy.Core;
 using UnityEngine;
 using UnityEngine.AI;
@@ -24,12 +24,22 @@ public class AngrySkelet : Entity
     [SerializeField] private Animator animator;
     [SerializeField] private bool useAnimationEvent = false;
 
+    [Header("Death Explosion")]
+    [SerializeField] private List<GameObject> debrisParts = new List<GameObject>();
+
+    [SerializeField] private float explosionForce = 10f;
+    [SerializeField] private float explosionRadius = 2f;
+    [SerializeField] private float upwardModifier = 1.5f;
+    [SerializeField] private float destroyDelay = 0.1f;
+    [SerializeField] private float debrisLifetime = 8f;
+
     private NavMeshAgent agent;
     private Entity playerEntity;
 
     private float nextAttackTime;
     private float startMoveTime;
-    private bool isAttacking;
+
+    private bool isDead;
 
     private void Start()
     {
@@ -42,8 +52,7 @@ public class AngrySkelet : Entity
 
         if (player == null)
         {
-            GameObject obj =
-                GameObject.FindGameObjectWithTag("Player");
+            GameObject obj = GameObject.FindGameObjectWithTag("Player");
 
             if (obj != null)
                 player = obj.transform;
@@ -52,10 +61,7 @@ public class AngrySkelet : Entity
         if (player != null)
             playerEntity = player.GetComponentInParent<Entity>();
 
-        // Задержка после появления
         startMoveTime = Time.time + spawnDelay;
-
-        // Первая атака возможна после появления
         nextAttackTime = startMoveTime;
 
         if (agent.isOnNavMesh)
@@ -69,7 +75,8 @@ public class AngrySkelet : Entity
 
     private void Update()
     {
-        if (player == null || !agent.isOnNavMesh)
+        if (isDead || player == null || agent == null ||
+            !agent.enabled || !agent.isOnNavMesh)
             return;
 
         // Ожидание после появления
@@ -100,40 +107,34 @@ public class AngrySkelet : Entity
             agent.ResetPath();
 
             SetWalking(false);
-
             RotateToPlayer();
 
             if (Time.time >= nextAttackTime)
             {
                 Attack();
-
-                nextAttackTime =
-                    Time.time + attackCooldown;
+                nextAttackTime = Time.time + attackCooldown;
             }
         }
     }
 
     private void SetWalking(bool walking)
     {
-        if (animator == null)
+        if (animator == null || !animator.enabled)
             return;
 
-        // Добавь Bool "IsWalking" в Animator
         animator.SetBool("IsWalking", walking);
     }
 
     private void RotateToPlayer()
     {
-        Vector3 direction =
-            player.position - transform.position;
+        Vector3 direction = player.position - transform.position;
 
         direction.y = 0f;
 
         if (direction.sqrMagnitude < 0.001f)
             return;
 
-        Quaternion rotation =
-            Quaternion.LookRotation(direction);
+        Quaternion rotation = Quaternion.LookRotation(direction);
 
         transform.rotation = Quaternion.Slerp(
             transform.rotation,
@@ -144,18 +145,20 @@ public class AngrySkelet : Entity
 
     private void Attack()
     {
-        if (animator != null)
+        if (isDead)
+            return;
+
+        if (animator != null && animator.enabled)
             animator.SetTrigger("Attack");
 
         if (!useAnimationEvent)
             DealDamage();
     }
 
-    // Вызывается через Animation Event,
-    // если Use Animation Event включён
+    // Можно вызывать через Animation Event
     public void DealDamage()
     {
-        if (player == null)
+        if (isDead || player == null)
             return;
 
         float distance = Vector3.Distance(
@@ -173,9 +176,105 @@ public class AngrySkelet : Entity
         {
             playerEntity.TakeDamage(damage, this);
 
-            Debug.Log(
-                "Скелет нанёс " + damage + " урона"
-            );
+            Debug.Log("Скелет нанёс " + damage + " урона");
         }
+    }
+
+    // ==================================
+    // СМЕРТЬ И РАСПАД СКЕЛЕТА
+    // ==================================
+
+    protected override void HandleDeath(object source)
+    {
+        if (isDead)
+            return;
+
+        isDead = true;
+
+        Debug.Log("Скелет погиб и распался на части!");
+
+        // Остановка движения
+        if (agent != null && agent.enabled)
+        {
+            if (agent.isOnNavMesh)
+            {
+                agent.isStopped = true;
+                agent.ResetPath();
+            }
+
+            agent.enabled = false;
+        }
+
+        // Отключение анимации
+        if (animator != null)
+            animator.enabled = false;
+
+        // Центр взрыва
+        Vector3 explosionPosition = transform.position + Vector3.up;
+
+        // Отделяем и разбрасываем части
+        foreach (GameObject part in debrisParts)
+        {
+            if (part == null)
+                continue;
+
+            // Отделяем от скелета
+            part.transform.SetParent(null, true);
+
+            // Активируем деталь
+            part.SetActive(true);
+
+            // Включаем отображение
+            Renderer[] renderers = part.GetComponentsInChildren<Renderer>();
+
+            foreach (Renderer rend in renderers)
+                rend.enabled = true;
+
+            // Добавляем коллайдер при необходимости
+            Collider col = part.GetComponent<Collider>();
+
+            if (col == null)
+                col = part.AddComponent<BoxCollider>();
+
+            col.enabled = true;
+
+            // Добавляем физику
+            Rigidbody rb = part.GetComponent<Rigidbody>();
+
+            if (rb == null)
+                rb = part.AddComponent<Rigidbody>();
+
+            rb.isKinematic = false;
+            rb.useGravity = true;
+
+            // Толчок от взрыва
+            rb.AddExplosionForce(
+                explosionForce,
+                explosionPosition,
+                explosionRadius,
+                upwardModifier,
+                ForceMode.Impulse
+            );
+
+            // Случайное вращение костей
+            rb.AddTorque(
+                Random.insideUnitSphere * explosionForce,
+                ForceMode.Impulse
+            );
+
+            // Удаление деталей спустя время
+            Destroy(part, debrisLifetime);
+        }
+
+        // Отключаем коллайдеры основного скелета
+        Collider[] colliders = GetComponentsInChildren<Collider>();
+
+        foreach (Collider col in colliders)
+        {
+            col.enabled = false;
+        }
+
+        // Удаляем основного скелета
+        Destroy(gameObject, destroyDelay);
     }
 }
