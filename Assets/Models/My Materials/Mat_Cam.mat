@@ -129,7 +129,7 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _Metallic: 0.2
-    - _NormalStrength: 1
+    - _NormalStrength: 2
     - _OcclusionStrength: 1
     - _OutlineWidth: 1
     - _OutlineZOffset: 0
