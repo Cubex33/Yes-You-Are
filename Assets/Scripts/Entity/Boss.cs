@@ -29,6 +29,9 @@ public class Boss : Entity
     [SerializeField] private int maxLivingSummons = 12;
     [SerializeField] private float summonInterval = 18f;
     [SerializeField] private float summonRadius = 5f;
+    [Header("Fireball Height")]
+    [SerializeField] private float fireballHeight = 1.7f;
+    [SerializeField] private bool showFireballGizmos = true;
     [Header("Actual prefabs produced by the VFX generator")]
     [SerializeField] private FireballProjectile fireballPrefab;
     [SerializeField] private ParticleSystem fireballImpactPrefab;
@@ -369,10 +372,11 @@ public class Boss : Entity
         {
             if (defeated || player == null) yield break;
             FaceTarget();
-            Vector3 origin = transform.position + transform.forward * 1.4f + Vector3.up * 1.7f;
-            Vector3 aim = (player.position + Vector3.up - origin).normalized;
+            Vector3 origin = transform.position + Vector3.up * fireballHeight;
+            Vector3 aim = (player.position - origin).normalized;
             Vector3 spread = Quaternion.AngleAxis((i - (spreadCount - 1) * .5f) * 12f, Vector3.up) * aim;
             FireballProjectile projectile = Instantiate(fireballPrefab, origin, Quaternion.LookRotation(spread));
+            StopAgent(); Animate("Fireball");
             projectile.Initialize(this, player, spread, Damage(fireballDamage), projectileSpeed, fireballImpactPrefab, enraged ? 12f : 0f);
             yield return new WaitForSeconds(.18f);
         }
@@ -582,6 +586,7 @@ public class Boss : Entity
         Gizmos.color = Color.red; Gizmos.DrawWireSphere(transform.position, meleeRange);
         Gizmos.color = Color.yellow; Gizmos.DrawWireSphere(transform.position, slamRadius);
         Gizmos.color = Color.cyan; Gizmos.DrawWireSphere(transform.position, summonRadius);
+        if (showFireballGizmos) Gizmos.DrawLine(transform.position + Vector3.up * fireballHeight, transform.position + Vector3.up * fireballHeight + Vector3.forward * 2f);
     }
 }
 
