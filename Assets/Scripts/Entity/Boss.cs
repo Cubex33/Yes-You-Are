@@ -38,8 +38,23 @@ public class Boss : Entity
     [SerializeField] private ParticleSystem summonVFX;
     [SerializeField] private ParticleSystem dashVFX;
     [SerializeField] private ParticleSystem rageVFX;
-    [Header("Optional Animator")]
+    [Header("Animation & hit reactions")]
     [SerializeField] private Animator animator;
+    [SerializeField] private bool useDamageReactions = true;
+    [SerializeField] private float heavyHitThreshold = 35f;
+    [SerializeField] private float staggerThreshold = 80f;
+    [SerializeField] private float staggerDuration = 1.2f;
+    [SerializeField] private float reactionCooldown = 0.6f;
+    [Header("Ground Slam - Damage Prefab")]
+    [Tooltip("Prefab with InfernoGroundSlam. This prefab handles its own damage; do not add BossSlamCaster.")]
+    [SerializeField] private InfernoGroundSlam groundSlamPrefab;
+    [SerializeField] private float groundSlamForwardOffset = 1.2f;
+
+    [Header("Ground slam visual impact")]
+    [SerializeField] private ParticleSystem slamImpactVFX;
+    [SerializeField] private bool createFallbackShockwave = true;
+    [SerializeField] private float shockwaveDuration = 0.65f;
+    [SerializeField] private int shockwaveSegments = 64;
     [Header("Rage / external health integration")]
     [SerializeField] private bool startEnraged;
     [SerializeField] private float rageSpeedMultiplier = 1.5f;
@@ -68,6 +83,9 @@ public class Boss : Entity
     private bool acting;
     private bool enraged;
     private bool defeated;
+    private float nextReactionTime;
+    private Coroutine staggerRoutine;
+    private bool stunned;
     private float availableAt, nextAction, nextSummon, retryNav;
 
     private void Start()
@@ -88,7 +106,9 @@ public class Boss : Entity
         nextSummon = availableAt + summonInterval;
         if (agent.isOnNavMesh) agent.isStopped = true;
         PlayOnce(spawnVFX, transform.position);
+        Animate("Spawn");
         if (startEnraged) ActivateRage();
+        Animate("Stand");
     }
 
     private void FindPlayer()
@@ -121,7 +141,7 @@ public class Boss : Entity
             if (Time.time >= retryNav) { retryNav = Time.time + 2f; SnapToNavMesh(); }
             return;
         }
-        if (Time.time < availableAt || acting) { StopAgent(); return; }
+        if (Time.time < availableAt || acting || stunned) { StopAgent(); return; }
         // Phases change pacing without requiring an Animator.
         if (Time.time >= nextDodge && Vector3.Distance(transform.position, player.position) < 3.5f && Random.value < 0.008f)
         {
@@ -181,7 +201,7 @@ public class Boss : Entity
 
     private IEnumerator EvasiveStep()
     {
-        acting = true; StopAgent();
+        acting = true; StopAgent(); Animate("Dodge");
         Vector3 toward = player.position - transform.position;
         toward.y = 0;
         Vector3 sideways = Vector3.Cross(Vector3.up, toward.normalized) * (Random.value < .5f ? 1f : -1f);
@@ -277,17 +297,39 @@ public class Boss : Entity
         MarkRecovery(actionCooldown);
     }
 
-    // ATTACK 2: clearly telegraphed AOE ground slam
+    // ATTACK 2: the dedicated InfernoGroundSlam prefab handles visuals AND damage.
     private IEnumerator SlamAttack()
     {
-        acting = true; StopAgent(); Animate("Slam");
-        Vector3 center = transform.position;
-        // Telegraph uses particles at impact point; actual damage is delayed to give the player time to dodge.
-        PlayOnce(summonVFX, center);
+        acting = true;
+        StopAgent();
+        FaceTarget();
+        Animate("Slam");
+
+        // The warning particle system does not deal damage.
+        Vector3 impactOrigin = transform.position + transform.forward * groundSlamForwardOffset;
+        Vector3 impactPoint = GroundPoint(impactOrigin);
+        PlayOnce(summonVFX, impactPoint);
+
+        // Match this windup to the weapon's ground-contact animation frame.
         yield return new WaitForSeconds(1.25f);
         if (defeated) yield break;
-        PlayOnce(slamVFX, center);
-        HitPlayer(slamRadius, slamDamage, false);
+
+        if (groundSlamPrefab != null)
+        {
+            // InfernoGroundSlam applies area damage ONCE from its own script.
+            Instantiate(groundSlamPrefab, impactPoint, Quaternion.identity);
+        }
+        else
+        {
+            // Legacy fallback only when the damage prefab has not been assigned.
+            PlayOnce(slamImpactVFX != null ? slamImpactVFX : slamVFX, impactPoint);
+            if (createFallbackShockwave)
+                StartCoroutine(ShockwaveRing(impactPoint + Vector3.up * 0.06f, slamRadius));
+            HitPlayer(slamRadius, slamDamage, false);
+            if (debugBoss)
+                Debug.LogWarning("Boss: Ground Slam prefab is missing. Using legacy slam hit.");
+        }
+
         yield return new WaitForSeconds(.35f);
         MarkRecovery(actionCooldown + .65f);
     }
@@ -305,7 +347,7 @@ public class Boss : Entity
             Vector3 origin = transform.position + transform.forward * 1.4f + Vector3.up * 1.7f;
             Vector3 aim = (player.position + Vector3.up - origin).normalized;
             Vector3 spread = Quaternion.AngleAxis((i - (spreadCount - 1) * .5f) * 12f, Vector3.up) * aim;
-            FireballProjectile projectile = Instantiate(fireballPrefab, origin, Quaternion.LookRotation(spread) * Quaternion.Euler(90f, 0f, 0f));
+            FireballProjectile projectile = Instantiate(fireballPrefab, origin, Quaternion.LookRotation(spread));
             projectile.Initialize(this, player, spread, Damage(fireballDamage), projectileSpeed, fireballImpactPrefab, enraged ? 12f : 0f);
             yield return new WaitForSeconds(.18f);
         }
@@ -370,6 +412,19 @@ public class Boss : Entity
     {
         if (defeated || amount <= 0f) return;
         trackedHealth = Mathf.Max(0f, trackedHealth - amount);
+        if (trackedHealth > 0f && useDamageReactions && Time.time >= nextReactionTime)
+        {
+            nextReactionTime = Time.time + reactionCooldown;
+            if (amount >= staggerThreshold && !stunned)
+            {
+                if (staggerRoutine != null) StopCoroutine(staggerRoutine);
+                staggerRoutine = StartCoroutine(StaggerRoutine());
+            }
+            else if (!acting && !stunned)
+            {
+                Animate(amount >= heavyHitThreshold ? "DamageHeavy" : "DamageLight");
+            }
+        }
         float ratio = trackedHealth / Mathf.Max(1f, bossMaxHealth);
         if (ratio <= phaseThreeAt && phase < 3)
         {
@@ -406,10 +461,95 @@ public class Boss : Entity
     {
         if (defeated) return;
         defeated = true;
+        stunned = false;
         StopAllCoroutines();
         StopAgent();
         Animate("Die");
         foreach (ParticleSystem ps in persistentVfx) if (ps != null) Destroy(ps.gameObject);
+    }
+
+    // Trigger these from the Lucy.Core damage callback, not from the boss attack code.
+    // For stronger impacts, temporarily stop movement and play a stagger animation.
+    private IEnumerator StaggerRoutine()
+    {
+        stunned = true;
+        StopAgent();
+        Animate("Stagger");
+        yield return new WaitForSeconds(Mathf.Max(0.1f, staggerDuration));
+        stunned = false;
+        staggerRoutine = null;
+    }
+
+    // Called externally on a knockdown, if Lucy.Core or your ragdoll system provides it.
+    public void PlayKnockdownAnimation()
+    {
+        if (defeated) return;
+        Animate("Knockdown");
+    }
+
+    public void PlayGetUpAnimation()
+    {
+        if (defeated) return;
+        Animate("GetUp");
+    }
+
+    private Vector3 GroundPoint(Vector3 origin)
+    {
+        if (Physics.Raycast(origin + Vector3.up * 2f, Vector3.down,
+            out RaycastHit groundHit, 15f, Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Ignore))
+        {
+            return groundHit.point;
+        }
+        if (NavMesh.SamplePosition(origin, out NavMeshHit navHit, 3f, agent.areaMask))
+            return navHit.position;
+        return origin;
+    }
+
+    // Runtime shockwave: a circular mesh-like line expands on the floor.
+    // An optional Particle System prefab can provide richer flames, debris and smoke.
+    private IEnumerator ShockwaveRing(Vector3 origin, float maximumRadius)
+    {
+        GameObject ring = new GameObject("Boss_GroundSlam_Shockwave");
+        ring.transform.position = origin;
+        LineRenderer line = ring.AddComponent<LineRenderer>();
+        line.useWorldSpace = false;
+        line.loop = true;
+        line.positionCount = Mathf.Max(16, shockwaveSegments);
+        line.startWidth = 0.35f;
+        line.endWidth = 0.35f;
+        line.numCornerVertices = 2;
+        Material material = null;
+        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null) shader = Shader.Find("Sprites/Default");
+        if (shader != null)
+        {
+            material = new Material(shader);
+            if (material.HasProperty("_BaseColor"))
+                material.SetColor("_BaseColor", new Color(1f, 0.25f, 0.015f, 1f));
+            else if (material.HasProperty("_Color"))
+                material.SetColor("_Color", new Color(1f, 0.25f, 0.015f, 1f));
+            line.material = material;
+        }
+        float length = Mathf.Max(0.05f, shockwaveDuration);
+        float time = 0f;
+        while (time < length && !defeated)
+        {
+            time += Time.deltaTime;
+            float t = Mathf.Clamp01(time / length);
+            float radius = Mathf.Lerp(0.25f, maximumRadius, t);
+            line.widthMultiplier = Mathf.Lerp(1f, 0.02f, t);
+            int count = line.positionCount;
+            for (int i = 0; i < count; i++)
+            {
+                float angle = i * 2f * Mathf.PI / count;
+                line.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius,
+                    0f, Mathf.Sin(angle) * radius));
+            }
+            yield return null;
+        }
+        Destroy(ring);
+        if (material != null) Destroy(material);
     }
 
     private void OnDrawGizmosSelected()
@@ -419,3 +559,5 @@ public class Boss : Entity
         Gizmos.color = Color.cyan; Gizmos.DrawWireSphere(transform.position, summonRadius);
     }
 }
+
+
