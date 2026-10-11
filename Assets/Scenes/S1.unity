@@ -6,7 +6,7 @@ OcclusionCullingSettings:
   serializedVersion: 2
   m_OcclusionBakeSettings:
     smallestOccluder: 5
-    smallestHole: 0.25
+    smallestHole: 0.01
     backfaceThreshold: 100
   m_SceneGUID: 66639b5ccd74c094eb7284bedf9284f2
   m_OcclusionCullingData: {fileID: 36300000, guid: 05d6da90a25f9de418b470f0c1e4b33d, type: 2}
@@ -45625,6 +45625,18 @@ PrefabInstance:
     - target: {fileID: 3568631638702071316, guid: cb6e5d62251ced84ca557eadc61957c6, type: 3}
       propertyPath: m_LocalRotation.z
       value: -0.13890615
+      objectReference: {fileID: 0}
+    - target: {fileID: 3568631638702071316, guid: cb6e5d62251ced84ca557eadc61957c6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 33.304
+      objectReference: {fileID: 0}
+    - target: {fileID: 3568631638702071316, guid: cb6e5d62251ced84ca557eadc61957c6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 73.451
+      objectReference: {fileID: 0}
+    - target: {fileID: 3568631638702071316, guid: cb6e5d62251ced84ca557eadc61957c6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 9.974
       objectReference: {fileID: 0}
     - target: {fileID: 3747157873029080013, guid: cb6e5d62251ced84ca557eadc61957c6, type: 3}
       propertyPath: m_SplineSettings.Spline

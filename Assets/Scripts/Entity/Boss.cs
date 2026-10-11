@@ -376,7 +376,6 @@ public class Boss : Entity
             Vector3 aim = (player.position - origin).normalized;
             Vector3 spread = Quaternion.AngleAxis((i - (spreadCount - 1) * .5f) * 12f, Vector3.up) * aim;
             FireballProjectile projectile = Instantiate(fireballPrefab, origin, Quaternion.LookRotation(spread));
-            StopAgent(); Animate("Fireball");
             projectile.Initialize(this, player, spread, Damage(fireballDamage), projectileSpeed, fireballImpactPrefab, enraged ? 12f : 0f);
             yield return new WaitForSeconds(.18f);
         }
