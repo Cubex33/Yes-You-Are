@@ -121,6 +121,16 @@ public class Boss : Entity
     [SerializeField] private float beamSpread = 3.2f;
     [SerializeField] private Color beamColor = new Color(1f, 0.06f, 0.02f, 1f);
 
+    [Header("DEATH BEAMS - Homing Explosions")]
+    [SerializeField] private bool enableBeamExplosions = true;
+    [SerializeField] private float beamExplosionInterval = 1.6f;
+    [SerializeField] private float beamExplosionSpeed = 12f;
+    [SerializeField] private float beamExplosionDamage = 27f;
+    [SerializeField] private float beamExplosionRadius = 2.7f;
+    [SerializeField] private float beamExplosionLifetime = 4f;
+    [SerializeField] private float beamExplosionSize = 0.7f;
+    [SerializeField] private float beamExplosionSteering = 7f;
+
     [Header("FIREBALL RING - Radial Barrage")]
     [SerializeField] private bool enableFireballRing = true;
     [SerializeField] private float fireballRingCooldown = 8f;
@@ -1162,6 +1172,7 @@ public class Boss : Entity
         }
 
         float elapsed = 0f;
+        float nextExplosion = Time.time + 0.65f;
         while (elapsed < beamDuration && !defeated && !isDown && player != null)
         {
             float dt = Time.deltaTime;
@@ -1189,10 +1200,73 @@ public class Boss : Entity
                     nextHit[i] = Time.time + Mathf.Max(.15f, beamTickInterval);
                 }
             }
+            if (enableBeamExplosions && Time.time >= nextExplosion)
+            {
+                nextExplosion = Time.time + Mathf.Max(0.4f,
+                    beamExplosionInterval * (enraged ? 0.65f : 1f));
+                for (int i = 0; i < count; i++)
+                    StartCoroutine(HomingBeamExplosion(centers[i] + Vector3.up * 1.5f));
+            }
             yield return null;
         }
         for (int i = 0; i < count; i++) RemoveBeamVisual(pillars[i]);
         MarkRecovery(.45f);
+    }
+
+    // Flying energy explosions released from each active death beam.
+    // The visual has no collider; damage is handled here so jump dodging works.
+    private IEnumerator HomingBeamExplosion(Vector3 spawnPosition)
+    {
+        GameObject orb = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        orb.name = "DeathBeam_Homing_Explosion";
+        Collider orbCollider = orb.GetComponent<Collider>();
+        if (orbCollider != null) Destroy(orbCollider);
+        orb.transform.position = spawnPosition;
+        orb.transform.localScale = Vector3.one * Mathf.Max(.2f, beamExplosionSize);
+        Renderer orbRenderer = orb.GetComponent<Renderer>();
+        if (orbRenderer != null)
+            orbRenderer.material = MakeBeamMaterial(new Color(1f, .15f, .025f, 1f));
+        beamVisuals.Add(orb);
+
+        Vector3 direction = transform.forward;
+        float life = 0f;
+        bool detonated = false;
+        while (life < beamExplosionLifetime && !defeated && !isDown && player != null)
+        {
+            float dt = Time.deltaTime;
+            life += dt;
+            Vector3 target = player.position + Vector3.up * 1.1f + playerVelocity * .12f;
+            Vector3 desired = target - orb.transform.position;
+            if (desired.sqrMagnitude > .0001f)
+                direction = Vector3.Slerp(direction, desired.normalized,
+                    Mathf.Clamp01(beamExplosionSteering * dt)).normalized;
+            orb.transform.position += direction * beamExplosionSpeed *
+                (enraged ? 1.2f : 1f) * dt;
+            orb.transform.Rotate(90f * dt, 140f * dt, 0f);
+
+            // Direct proximity hit; a flying/jumping player can still be hit.
+            if (Vector3.Distance(orb.transform.position, target) <=
+                Mathf.Max(.5f, beamExplosionRadius * .5f))
+            {
+                detonated = true;
+                break;
+            }
+            yield return null;
+        }
+
+        if (!isDown && !defeated && detonated && player != null)
+        {
+            Vector3 blast = orb.transform.position;
+            PlayOnce(fireballImpactPrefab != null ? fireballImpactPrefab :
+                (slamImpactVFX != null ? slamImpactVFX : slamVFX), blast);
+            if (Vector3.Distance(player.position + Vector3.up, blast) <= beamExplosionRadius)
+            {
+                if (playerEntity == null) playerEntity = player.GetComponentInParent<Entity>();
+                if (playerEntity != null)
+                    playerEntity.TakeDamage(Damage(beamExplosionDamage), this);
+            }
+        }
+        RemoveBeamVisual(orb);
     }
 
     // ==========================================
