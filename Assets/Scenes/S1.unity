@@ -936,7 +936,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2111706976297523689, guid: b8907a5558cf6224d920817fb3e4ee92, type: 3}
       propertyPath: currentHealth
-      value: 50
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2911775356732946096, guid: b8907a5558cf6224d920817fb3e4ee92, type: 3}
       propertyPath: damper
@@ -43440,6 +43440,32 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 429240849231762899, guid: 73b2ef8e148dc8346ab156e7f07e9865, type: 3}
   m_PrefabInstance: {fileID: 1743190858}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1745144786 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7124876910065599902, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+  m_PrefabInstance: {fileID: 8501618335782253037}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &1745144792
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1745144786}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1746010094
 GameObject:
   m_ObjectHideFlags: 0
@@ -46048,8 +46074,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 5594993014681728341}
     - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: beamCount
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: maxHealth
+      value: 7500
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: beamHeight
-      value: 56
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: beamRadius
@@ -46064,16 +46098,116 @@ PrefabInstance:
       value: 0.2068424
       objectReference: {fileID: 0}
     - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: knifePrefab
+      value: 
+      objectReference: {fileID: 5695989821072398864, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: beamCooldown
       value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: currentHealth
+      value: 7500
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: hellTrapCount
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageBeamCount
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageKnifeSpeed
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: beamFollowSpeed
-      value: 8
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: hellTrapPillars
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageKnifeDamage
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: beamExplosionSize
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageHellTrapCount
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageKnifeInterval
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageKnifeLifetime
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: ringFireballCount
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: ringFireballSpeed
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: skeletonHandSpeed
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: playerStunDuration
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageKnifeTurnSpeed
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: skeletonHandDamage
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: skeletonHandPrefab
+      value: 
+      objectReference: {fileID: 830206552914566015, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageKnivesPerVolley
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: fireballRingCooldown
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: skeletonHandCooldown
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: skeletonHandLifetime
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: skeletonHandMaxRange
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: skeletonHandMinRange
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: rageRingFireballCount
+      value: 24
+      objectReference: {fileID: 0}
+    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
+      propertyPath: skeletonHandHitRadius
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6847128839456658298, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: m_Name
@@ -59977,6 +60111,78 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -8525522900301631032, guid: 79b2780360896f841bbbec9264d7e22d, type: 3}
+--- !u!1001 &8501618335782253037
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2.61263
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 9.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -632.92
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152643166657358957, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5840411130736192724, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_Radius
+      value: 0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 7124876910065599902, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_Name
+      value: SkeletonHandProjectile
+      objectReference: {fileID: 0}
+    - target: {fileID: 7124876910065599902, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9138255512509466251, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 45af009038008aa47a8a6dfb6727a3e2, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7124876910065599902, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1745144792}
+  m_SourcePrefab: {fileID: 100100000, guid: 604536d9326a08041aadbf394f05f6a7, type: 3}
 --- !u!4 &8556386540374804526 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4618153945409562451, guid: b7c3ea3e3a88a7349b3a58979cc850dd, type: 3}
@@ -60435,6 +60641,67 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 8509054675012646762, guid: 79b2780360896f841bbbec9264d7e22d, type: 3}
+--- !u!1001 &8867886532815785441
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -8.2183075
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 5.247551
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -616.54535
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4241893244115956305, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5695989821072398864, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_Name
+      value: Knife
+      objectReference: {fileID: 0}
+    - target: {fileID: 5695989821072398864, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c0ecd8ee240105e4eb7d36623e78c5a1, type: 3}
 --- !u!4 &8956535941442676463 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8490799488948881827, guid: b7c3ea3e3a88a7349b3a58979cc850dd, type: 3}
@@ -60698,3 +60965,5 @@ SceneRoots:
   - {fileID: 374851304}
   - {fileID: 6415808189043620040}
   - {fileID: 1697602529}
+  - {fileID: 8867886532815785441}
+  - {fileID: 8501618335782253037}
