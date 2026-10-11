@@ -30,7 +30,7 @@ namespace Lucy.Core
         foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
         {
             rb.isKinematic = true;
-            rb.useGravity = false;
+            rb.useGravity = true;
         }
     }
 
