@@ -353,26 +353,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 2520795653187335639, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2520795653187335639, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 2520795653187335639, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 2520795653187335639, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2520795653187335639, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -90
-      objectReference: {fileID: 0}
     - target: {fileID: 6074849891213232576, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: m_LocalPosition.x
       value: -8.475096
