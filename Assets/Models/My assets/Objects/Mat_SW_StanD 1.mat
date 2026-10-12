@@ -11,8 +11,7 @@ Material:
   m_Shader: {fileID: 4800000, guid: 0cc4504edf8a9a146892f31094584166, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _CEL_SHADING
+  m_ValidKeywords: []
   m_InvalidKeywords:
   - _RECEIVESHADOWS_ON
   m_LightmapFlags: 4
@@ -132,7 +131,7 @@ Material:
     - _SrcBlendAlpha: 1
     - _Surface: 0
     - _UVSec: 0
-    - _UseCelShading: 1
+    - _UseCelShading: 0
     - _UseEmission: 0
     - _UseNormalMap: 0
     - _UseOutline: 0
@@ -142,7 +141,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 1, g: 0.8436457, b: 0, a: 1}
+    - _Color: {r: 0.8381647, g: 1, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
     - _Emissions_Color: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
