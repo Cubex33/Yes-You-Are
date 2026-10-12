@@ -129,7 +129,7 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _Metallic: 0
-    - _NormalStrength: 2
+    - _NormalStrength: 1
     - _OcclusionStrength: 1
     - _OutlineWidth: 1
     - _OutlineZOffset: 0
@@ -154,7 +154,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.6968672, g: 0.8490566, b: 0.8009504, a: 1}
-    - _Color: {r: 0.6968672, g: 0.8490566, b: 0.8009504, a: 1}
+    - _Color: {r: 0.69803923, g: 0.82962066, b: 0.8509804, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Emissions_Color: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}

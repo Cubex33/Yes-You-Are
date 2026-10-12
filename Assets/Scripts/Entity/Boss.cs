@@ -1,4 +1,3 @@
-
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -187,6 +186,22 @@ public class Boss : Entity
     [SerializeField] private float groundExplosionVerticalReach = 9f;
     private float nextGroundExplosion;
 
+    [Header("SKELETON HAND - Phase 2+")]
+    [SerializeField] private bool enableSkeletonHand = true;
+    [SerializeField] private SkeletonHandProjectile skeletonHandPrefab;
+    [SerializeField] private float skeletonHandCooldown = 14f;
+    [SerializeField] private float skeletonHandMinRange = 6f;
+    [SerializeField] private float skeletonHandMaxRange = 28f;
+    [SerializeField] private float skeletonHandWindup = 0.9f;
+    [SerializeField] private float skeletonHandSpeed = 18f;
+    [SerializeField] private float skeletonHandDamage = 20f;
+    [SerializeField] private float skeletonHandHitRadius = 1.5f;
+    [SerializeField] private float skeletonHandLifetime = 3f;
+    [SerializeField] private float playerStunDuration = 1.5f;
+
+    private float nextSkeletonHand;
+    private Coroutine playerStunRoutine;
+
     [Header("HELL TRAP - Simultaneous Ultimates")]
     [SerializeField] private bool enableHellTraps = true;
     [SerializeField, Range(1, 5)] private int hellTrapCount = 2;
@@ -246,6 +261,13 @@ public class Boss : Entity
     private bool enraged;
     private bool defeated;
     private bool stunned;
+
+
+    [Header("SKELETON HAND - Player Stun")]
+    [SerializeField] private MonoBehaviour[] playerMovementBehaviours;
+
+    private Coroutine playerStunCoroutine;
+    private bool[] previousMovementStates;
 
     private float nextReactionTime;
 
@@ -347,6 +369,7 @@ public class Boss : Entity
         nextRingAttack = availableAt + 2.5f;
         nextGroundExplosion = availableAt + 5f;
         nextHellTrap = availableAt + 16f;
+        nextSkeletonHand = availableAt + 6f;
 
         if (agent.isOnNavMesh)
             agent.isStopped = true;
@@ -467,6 +490,68 @@ public class Boss : Entity
         return false;
     }
 
+    public void ApplySkeletonHandStun(float duration)
+    {
+        if (isDown || defeated)
+            return;
+
+        // Если оглушение уже действует, не запускаем его повторно.
+        if (playerStunCoroutine != null)
+            StopCoroutine(playerStunCoroutine);
+
+        playerStunCoroutine = StartCoroutine(PlayerStunRoutine(duration));
+    }
+
+    private IEnumerator PlayerStunRoutine(float duration)
+    {
+        if (playerMovementBehaviours == null ||
+            playerMovementBehaviours.Length == 0)
+        {
+            playerStunCoroutine = null;
+            yield break;
+        }
+
+        previousMovementStates =
+            new bool[playerMovementBehaviours.Length];
+
+        for (int i = 0; i < playerMovementBehaviours.Length; i++)
+        {
+            MonoBehaviour behaviour = playerMovementBehaviours[i];
+
+            if (behaviour == null)
+                continue;
+
+            previousMovementStates[i] = behaviour.enabled;
+            behaviour.enabled = false;
+        }
+
+        yield return new WaitForSeconds(Mathf.Max(0.1f, duration));
+
+        RestorePlayerMovement();
+    }
+
+    private void RestorePlayerMovement()
+    {
+        if (playerMovementBehaviours != null &&
+            previousMovementStates != null)
+        {
+            for (int i = 0;
+                 i < playerMovementBehaviours.Length;
+                 i++)
+            {
+                MonoBehaviour behaviour = playerMovementBehaviours[i];
+
+                if (behaviour == null)
+                    continue;
+
+                behaviour.enabled = previousMovementStates[i];
+            }
+        }
+
+        previousMovementStates = null;
+        playerStunCoroutine = null;
+    }
+
     // ==========================================
     // UPDATE
     // ==========================================
@@ -536,6 +621,19 @@ public class Boss : Entity
         }
 
         float playerDistance = FlatDistance(transform.position, player.position);
+
+        // SKELETON HAND — Phase 2+
+        if (enableSkeletonHand &&
+            phase >= 2 &&
+            skeletonHandPrefab != null &&
+            Time.time >= nextSkeletonHand &&
+            playerDistance >= skeletonHandMinRange &&
+            playerDistance <= skeletonHandMaxRange)
+        {
+            nextSkeletonHand = Time.time + skeletonHandCooldown;
+            StartCoroutine(SkeletonHandAttack());
+            return;
+        }
 
         // Repeated jumping is dangerous: an air burst targets the predicted landing area.
         if (enableAntiAir && IsPlayerAirborne() &&
@@ -1142,6 +1240,55 @@ public class Boss : Entity
         yield return new WaitForSeconds(0.35f);
 
         MarkRecovery(actionCooldown + 0.65f);
+    }
+
+    private IEnumerator SkeletonHandAttack()
+    {
+        if (isDown || defeated || player == null ||
+            skeletonHandPrefab == null)
+            yield break;
+
+        acting = true;
+        StopAgent();
+        FaceTarget();
+
+        // Телеграф атаки: босс предупреждает игрока.
+        Animate("Slam");
+
+        yield return new WaitForSeconds(
+            Mathf.Max(0.2f, skeletonHandWindup));
+
+        if (isDown || defeated || player == null)
+        {
+            acting = false;
+            yield break;
+        }
+
+        FaceTarget();
+
+        Vector3 spawnPosition =
+            transform.position +
+            transform.forward * 1.8f +
+            Vector3.up * 1.2f;
+
+        Vector3 direction =
+            (player.position + Vector3.up - spawnPosition).normalized;
+
+        SkeletonHandProjectile hand = Instantiate(
+            skeletonHandPrefab,
+            spawnPosition,
+            Quaternion.LookRotation(direction));
+
+        hand.Initialize(
+            this,
+            player,
+            Damage(skeletonHandDamage),
+            skeletonHandSpeed,
+            skeletonHandHitRadius,
+            skeletonHandLifetime,
+            playerStunDuration);
+
+        MarkRecovery(actionCooldown + 0.8f);
     }
 
     // ==========================================
