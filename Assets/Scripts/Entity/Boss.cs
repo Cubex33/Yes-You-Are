@@ -210,6 +210,15 @@ public class Boss : Entity
     [SerializeField, Min(3f)] private float hellTrapRadius = 11f;
     [SerializeField, Min(1f)] private float hellTrapSpacing = 7f;
     [SerializeField, Min(1f)] private float hellTrapPillarHeight = 15f;
+
+    [Header("HELL TRAP - Spear Model")]
+    [Tooltip("Префаб копья для столбов ловушки. Если пусто, используются старые красные лучи.")]
+    [SerializeField] private GameObject hellTrapSpearPrefab;
+    [Tooltip("Дополнительный поворот модели копья.")]
+    [SerializeField] private Vector3 hellTrapSpearRotationOffset = Vector3.zero;
+    [Tooltip("Смещение модели копья вверх или вниз относительно поверхности пола.")]
+    [SerializeField] private float hellTrapSpearVerticalOffset = 0f;
+
     [SerializeField] private float hellTrapShrinkTime = 3.5f;
     [SerializeField] private float hellTrapWarning = 1.2f;
     [SerializeField] private float hellTrapCooldown = 28f;
@@ -228,6 +237,9 @@ public class Boss : Entity
     private int lastAttackType = -1;
     private float nextBeamAttack;
     private float nextRingAttack;
+
+    // Король может двигаться, пока активны гигантские лучи.
+    private bool allowMovementDuringDeathBeams;
     private readonly List<GameObject> beamVisuals = new List<GameObject>();
 
     private Vector3 previousPlayerPosition;
@@ -611,6 +623,19 @@ public class Boss : Entity
                 SnapToNavMesh();
             }
 
+            return;
+        }
+
+        // Во время гигантских лучей разрешаем королю преследовать игрока.
+        // Остальные атаки по-прежнему блокируют движение.
+        if (allowMovementDuringDeathBeams && !stunned)
+        {
+            agent.speed =
+                speed *
+                (enraged ? rageSpeedMultiplier : 1f) *
+                (phase >= 3 ? 1.2f : 1f);
+
+            Chase();
             return;
         }
 
@@ -1411,7 +1436,10 @@ public class Boss : Entity
     private IEnumerator DeathBeamAttack()
     {
         acting = true;
-        StopAgent();
+
+        // Не останавливаем NavMeshAgent: король продолжает преследовать игрока.
+        allowMovementDuringDeathBeams = true;
+
         Animate("Slam");
         int count = enraged ? rageBeamCount : beamCount;
         count = Mathf.Clamp(count, 1, 12);
@@ -1442,7 +1470,11 @@ public class Boss : Entity
         }
         yield return new WaitForSeconds(Mathf.Max(.15f, beamWarning));
         for (int i = 0; i < count; i++) RemoveBeamVisual(warnings[i]);
-        if (isDown || defeated || player == null) yield break;
+        if (isDown || defeated || player == null)
+        {
+            allowMovementDuringDeathBeams = false;
+            yield break;
+        }
 
         for (int i = 0; i < count; i++)
         {
@@ -1490,6 +1522,8 @@ public class Boss : Entity
             yield return null;
         }
         for (int i = 0; i < count; i++) RemoveBeamVisual(pillars[i]);
+
+        allowMovementDuringDeathBeams = false;
         MarkRecovery(.45f);
     }
 
@@ -1612,6 +1646,29 @@ public class Boss : Entity
         return obj;
     }
 
+    private GameObject CreateHellTrapPillarVisual(string objectName, Vector3 position)
+    {
+        // Если модель копья не назначена, используем старый красный луч.
+        if (hellTrapSpearPrefab == null)
+        {
+            return CreateBeamVisual(
+                objectName,
+                new Color(1f, .08f, .01f, 1f),
+                .65f
+            );
+        }
+
+        GameObject spear = Instantiate(
+            hellTrapSpearPrefab,
+            position + Vector3.up * hellTrapSpearVerticalOffset,
+            Quaternion.Euler(hellTrapSpearRotationOffset)
+        );
+
+        spear.name = objectName;
+        beamVisuals.Add(spear);
+        return spear;
+    }
+
     // ULTIMATE: several traps run at the SAME time, not one after another.
     // Each trap has shrinking sky pillars, meteor strikes, and a final blast.
     private IEnumerator SimultaneousHellTraps()
@@ -1651,8 +1708,17 @@ public class Boss : Entity
         for (int i = 0; i < count; i++)
         {
             if (i == safePillar) continue; // visible escape gap
-            pillars[i] = CreateBeamVisual("HELL_TRAP_PILLAR_" + index + "_" + i,
-                new Color(1f, .08f, .01f, 1f), .65f);
+
+            float angle = (i / (float)count) * Mathf.PI * 2f
+                + safeAngle * Mathf.Deg2Rad;
+
+            Vector3 position = center +
+                new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * startRadius;
+
+            pillars[i] = CreateHellTrapPillarVisual(
+                "HELL_TRAP_PILLAR_" + index + "_" + i,
+                position
+            );
         }
         int meteors = enraged ? rageHellTrapMeteorCount : hellTrapMeteorCount;
         float nextMeteorAt = 0.45f;
@@ -1669,8 +1735,21 @@ public class Boss : Entity
                 float a = (i / (float)count) * Mathf.PI * 2f + safeAngle * Mathf.Deg2Rad;
                 Vector3 position = center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * radius;
                 LineRenderer lr = pillars[i].GetComponent<LineRenderer>();
-                lr.SetPosition(0, position + Vector3.up * .1f);
-                lr.SetPosition(1, position + Vector3.up * hellTrapPillarHeight);
+
+                if (lr != null)
+                {
+                    // Старый вариант: красный луч.
+                    lr.SetPosition(0, position + Vector3.up * .1f);
+                    lr.SetPosition(1, position + Vector3.up * hellTrapPillarHeight);
+                }
+                else
+                {
+                    // Новый вариант: модель копья движется вместе с ловушкой.
+                    pillars[i].transform.position =
+                        position + Vector3.up * hellTrapSpearVerticalOffset;
+                    pillars[i].transform.rotation =
+                        Quaternion.Euler(hellTrapSpearRotationOffset);
+                }
                 if (Time.time >= nextPillarHit && FlatDistance(position, player.position) <= 1.05f &&
                     player.position.y >= position.y - 1f && player.position.y < position.y + hellTrapPillarHeight)
                 {
