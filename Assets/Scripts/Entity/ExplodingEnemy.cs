@@ -1,6 +1,7 @@
-using UnityEngine;
+using IDosGames;
 using Lucy.Core;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Lucy.Enemy
 {
@@ -24,6 +25,7 @@ namespace Lucy.Enemy
 
         protected override void HandleDeath(object source)
         {
+            ClaimRewardSystem.ClaimCoinReward(10, 0);
             foreach (var part in debrisParts)
             {
                 if (part == null) continue;

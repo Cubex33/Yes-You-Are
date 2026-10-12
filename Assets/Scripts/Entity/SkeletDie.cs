@@ -1,3 +1,4 @@
+using IDosGames;
 using Lucy.Core;
 using System;
 using UnityEngine;
@@ -18,6 +19,7 @@ public class SkeletDie : MonoBehaviour
         if (entity.Health <= 0 || entity.IsDead)
         {
             PlayableDirector.Play();
-        }
+            ClaimRewardSystem.ClaimCoinReward(100, 0);
+            IGSClientAPI.ClaimTokenReward(10, 0, result => Debug.Log("Награда обработана"),error => Debug.LogError(error)); }
     }
 }
