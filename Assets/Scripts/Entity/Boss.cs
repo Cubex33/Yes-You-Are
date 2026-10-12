@@ -166,6 +166,48 @@ public class Boss : Entity
     [SerializeField] private float randomBeamChaseDelay = 0.55f;
     [SerializeField] private float rageBeamFollowMultiplier = 1.7f;
 
+    [Header("LASER CIRCLE - Adjustable Radius")]
+    [SerializeField, Min(1f)] private float laserCircleRadius = 9f;
+    [SerializeField, Range(0f, 1f)] private float laserCircleRandomness = 0.15f;
+    [SerializeField] private bool laserCircleCenteredOnPlayer = true;
+
+    [Header("KNIVES - Player Height")]
+    [SerializeField] private float knifeHeightOffset = 0.85f;
+    [SerializeField] private bool knifeFollowPlayerHeightDuringWindup = true;
+
+    [Header("GROUND EXPLOSIONS - Large Radius")]
+    [SerializeField] private bool enableGroundExplosions = true;
+    [SerializeField, Min(1f)] private float groundExplosionRadius = 6f;
+    [SerializeField] private float groundExplosionDamage = 48f;
+    [SerializeField] private float groundExplosionCooldown = 9f;
+    [SerializeField] private float groundExplosionWarning = 1.15f;
+    [SerializeField] private int groundExplosionRageWaves = 3;
+    [SerializeField] private float groundExplosionWaveDelay = 0.8f;
+    [SerializeField] private float groundExplosionMaxRange = 32f;
+    [SerializeField] private float groundExplosionVerticalReach = 9f;
+    private float nextGroundExplosion;
+
+    [Header("HELL TRAP - Simultaneous Ultimates")]
+    [SerializeField] private bool enableHellTraps = true;
+    [SerializeField, Range(1, 5)] private int hellTrapCount = 2;
+    [SerializeField, Range(1, 6)] private int rageHellTrapCount = 3;
+    [SerializeField, Range(4, 16)] private int hellTrapPillars = 8;
+    [SerializeField, Min(3f)] private float hellTrapRadius = 11f;
+    [SerializeField, Min(1f)] private float hellTrapSpacing = 7f;
+    [SerializeField, Min(1f)] private float hellTrapPillarHeight = 15f;
+    [SerializeField] private float hellTrapShrinkTime = 3.5f;
+    [SerializeField] private float hellTrapWarning = 1.2f;
+    [SerializeField] private float hellTrapCooldown = 28f;
+    [SerializeField] private float hellTrapPillarDamage = 12f;
+    [SerializeField] private float hellTrapFinalDamage = 65f;
+    [SerializeField] private float hellTrapFinalRadius = 5.5f;
+    [SerializeField] private int hellTrapMeteorCount = 5;
+    [SerializeField] private int rageHellTrapMeteorCount = 9;
+    [SerializeField] private float hellTrapMeteorRadius = 2.3f;
+    [SerializeField] private float hellTrapMeteorDamage = 20f;
+    [SerializeField] private float hellTrapMeteorWarning = .75f;
+    private float nextHellTrap;
+
     // Fair rotation: attacks that have not been used recently have higher priority.
     private readonly float[] attackLastUsed = new float[6];
     private int lastAttackType = -1;
@@ -303,6 +345,8 @@ public class Boss : Entity
         for (int i = 0; i < attackLastUsed.Length; i++)
             attackLastUsed[i] = -100f;
         nextRingAttack = availableAt + 2.5f;
+        nextGroundExplosion = availableAt + 5f;
+        nextHellTrap = availableAt + 16f;
 
         if (agent.isOnNavMesh)
             agent.isStopped = true;
@@ -453,6 +497,22 @@ public class Boss : Entity
         {
             nextKnifeStorm = Time.time + Mathf.Max(.6f, rageKnifeInterval);
             StartCoroutine(RageKnifeStorm());
+        }
+
+        // Multiple hell traps spawn together, without freezing the main combat AI.
+        if (enableHellTraps && Time.time >= nextHellTrap &&
+            FlatDistance(transform.position, player.position) <= 34f)
+        {
+            nextHellTrap = Time.time + Mathf.Max(12f, hellTrapCooldown * (enraged ? .8f : 1f));
+            StartCoroutine(SimultaneousHellTraps());
+        }
+
+        // Ground explosions are independent; no interruption of other boss abilities.
+        if (enableGroundExplosions && Time.time >= nextGroundExplosion &&
+            FlatDistance(transform.position, player.position) <= groundExplosionMaxRange)
+        {
+            nextGroundExplosion = Time.time + Mathf.Max(3f, groundExplosionCooldown * (enraged ? .75f : 1f));
+            StartCoroutine(GroundExplosionAttack());
         }
 
         if (agent == null || !agent.enabled)
@@ -1214,18 +1274,18 @@ public class Boss : Entity
         GameObject[] warnings = new GameObject[count];
         float[] nextHit = new float[count];
 
-        // Offset beams so that dodging one can lead into another.
+        // Evenly spaced circle around the player (or the boss), adjustable in Inspector.
+        // A small angular variation keeps attacks less predictable.
+        Vector3 circleOrigin = laserCircleCenteredOnPlayer ? PredictPlayer(0.25f) : transform.position;
+        float circleRotation = Random.Range(0f, Mathf.PI * 2f);
         for (int i = 0; i < count; i++)
         {
-            // Each laser drops in a DIFFERENT random place, then hunts the player.
-            float angle = Random.Range(0f, Mathf.PI * 2f);
-            float radius = Random.Range(
-                Mathf.Max(1f, randomBeamSpawnMin),
-                Mathf.Max(randomBeamSpawnMin + 0.1f, randomBeamSpawnMax));
-            centers[i] = GroundPoint(PredictPlayer(0.25f) +
-                new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius);
-            // Separate target offsets keep multiple beams surrounding the player.
-            float targetAngle = i * Mathf.PI * 2f / count + Random.Range(-.3f, .3f);
+            float angle = circleRotation + i * Mathf.PI * 2f / count +
+                Random.Range(-laserCircleRandomness, laserCircleRandomness);
+            float radius = Mathf.Max(1f, laserCircleRadius);
+            Vector3 direction = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+            centers[i] = GroundPoint(circleOrigin + direction * radius);
+            float targetAngle = angle + Mathf.PI;
             offsets[i] = new Vector3(Mathf.Cos(targetAngle), 0f,
                 Mathf.Sin(targetAngle)) * (count == 2 ? 1.3f : beamSpread * .5f);
             warnings[i] = CreateBeamVisual("DeathBeam_Warning", new Color(1f, .55f, .03f), .18f);
@@ -1343,6 +1403,181 @@ public class Boss : Entity
     }
 
     // ==========================================
+    // AREA EXPLOSIONS: lock in the target when the warning appears.
+    // They are dodgeable but repeated during rage.
+    private IEnumerator GroundExplosionAttack()
+    {
+        int waves = enraged ? Mathf.Clamp(groundExplosionRageWaves, 1, 8) : 1;
+        for (int wave = 0; wave < waves && !isDown && !defeated && player != null; wave++)
+        {
+            Vector3 center = GroundPoint(PredictPlayer(enraged ? .25f : .15f));
+            GameObject warning = CreateExplosionCircle(center, groundExplosionRadius,
+                new Color(1f, .55f, .07f, 1f), "Ground_Explosion_Warning");
+            float elapsed = 0f;
+            float delay = Mathf.Max(.35f, groundExplosionWarning * (enraged ? .8f : 1f));
+            while (elapsed < delay && !isDown && !defeated)
+            {
+                elapsed += Time.deltaTime;
+                if (warning != null)
+                {
+                    LineRenderer lr = warning.GetComponent<LineRenderer>();
+                    lr.widthMultiplier = 1f + Mathf.PingPong(elapsed * 4f, .6f);
+                }
+                yield return null;
+            }
+            RemoveBeamVisual(warning);
+            if (isDown || defeated || player == null) yield break;
+
+            PlayOnce(slamImpactVFX != null ? slamImpactVFX : slamVFX, center);
+            GameObject flash = CreateExplosionCircle(center, groundExplosionRadius,
+                new Color(1f, .12f, .015f, 1f), "GROUND_EXPLOSION");
+            // Horizontal blast area reaches jumping players too.
+            if (FlatDistance(player.position, center) <= groundExplosionRadius &&
+                player.position.y >= center.y - 1.5f &&
+                player.position.y <= center.y + groundExplosionVerticalReach)
+            {
+                if (playerEntity == null) playerEntity = player.GetComponentInParent<Entity>();
+                if (playerEntity != null) playerEntity.TakeDamage(Damage(groundExplosionDamage), this);
+            }
+            yield return new WaitForSeconds(.22f);
+            RemoveBeamVisual(flash);
+            if (wave + 1 < waves)
+                yield return new WaitForSeconds(Mathf.Max(.1f, groundExplosionWaveDelay));
+        }
+    }
+
+    private GameObject CreateExplosionCircle(Vector3 center, float radius, Color color, string objectName)
+    {
+        GameObject obj = new GameObject(objectName);
+        beamVisuals.Add(obj);
+        LineRenderer line = obj.AddComponent<LineRenderer>();
+        line.useWorldSpace = true;
+        line.loop = true;
+        line.positionCount = 72;
+        line.startWidth = .22f;
+        line.endWidth = .22f;
+        line.material = MakeBeamMaterial(color);
+        for (int i = 0; i < line.positionCount; i++)
+        {
+            float a = i * Mathf.PI * 2f / line.positionCount;
+            line.SetPosition(i, center + new Vector3(Mathf.Cos(a) * radius, .14f, Mathf.Sin(a) * radius));
+        }
+        return obj;
+    }
+
+    // ULTIMATE: several traps run at the SAME time, not one after another.
+    // Each trap has shrinking sky pillars, meteor strikes, and a final blast.
+    private IEnumerator SimultaneousHellTraps()
+    {
+        if (player == null || isDown || defeated) yield break;
+        int count = Mathf.Clamp(enraged ? rageHellTrapCount : hellTrapCount, 1, 6);
+        Vector3 focus = GroundPoint(PredictPlayer(.3f));
+        float angleOffset = Random.Range(0f, Mathf.PI * 2f);
+        float spread = Mathf.Max(1f, hellTrapSpacing);
+        for (int n = 0; n < count; n++)
+        {
+            float angle = angleOffset + 2f * Mathf.PI * n / count;
+            // Keep one trap focused on the player; others surround the escape routes.
+            Vector3 offset = n == 0 ? Vector3.zero :
+                new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spread;
+            StartCoroutine(RunHellTrap(GroundPoint(focus + offset), n));
+        }
+        yield break;
+    }
+
+    private IEnumerator RunHellTrap(Vector3 center, int index)
+    {
+        int count = Mathf.Clamp(hellTrapPillars, 4, 16);
+        GameObject[] pillars = new GameObject[count];
+        float startRadius = Mathf.Max(3f, hellTrapRadius);
+        float shrinkSeconds = Mathf.Max(.8f, hellTrapShrinkTime);
+        float finalRadius = Mathf.Max(2f, hellTrapFinalRadius);
+        float warningSeconds = Mathf.Max(.4f, hellTrapWarning);
+        float safeAngle = Random.value * 360f;
+        int safePillar = Random.Range(0, count);
+        GameObject warning = CreateExplosionCircle(center, startRadius,
+            new Color(1f, .55f, .08f, 1f), "HellTrap_Warning_" + index);
+        yield return new WaitForSeconds(warningSeconds);
+        RemoveBeamVisual(warning);
+        if (isDown || defeated || player == null) yield break;
+
+        for (int i = 0; i < count; i++)
+        {
+            if (i == safePillar) continue; // visible escape gap
+            pillars[i] = CreateBeamVisual("HELL_TRAP_PILLAR_" + index + "_" + i,
+                new Color(1f, .08f, .01f, 1f), .65f);
+        }
+        int meteors = enraged ? rageHellTrapMeteorCount : hellTrapMeteorCount;
+        float nextMeteorAt = 0.45f;
+        float nextPillarHit = 0f;
+        float elapsed = 0f;
+        while (elapsed < shrinkSeconds && !isDown && !defeated && player != null)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / shrinkSeconds);
+            float radius = Mathf.Lerp(startRadius, Mathf.Max(finalRadius + 1.3f, 3f), t);
+            for (int i = 0; i < count; i++)
+            {
+                if (pillars[i] == null) continue;
+                float a = (i / (float)count) * Mathf.PI * 2f + safeAngle * Mathf.Deg2Rad;
+                Vector3 position = center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * radius;
+                LineRenderer lr = pillars[i].GetComponent<LineRenderer>();
+                lr.SetPosition(0, position + Vector3.up * .1f);
+                lr.SetPosition(1, position + Vector3.up * hellTrapPillarHeight);
+                if (Time.time >= nextPillarHit && FlatDistance(position, player.position) <= 1.05f &&
+                    player.position.y >= position.y - 1f && player.position.y < position.y + hellTrapPillarHeight)
+                {
+                    DealHellTrapDamage(hellTrapPillarDamage);
+                    nextPillarHit = Time.time + .65f;
+                }
+            }
+            if (elapsed >= nextMeteorAt && meteors > 0)
+            {
+                meteors--;
+                nextMeteorAt += Mathf.Max(.27f, shrinkSeconds / Mathf.Max(1, enraged ? rageHellTrapMeteorCount : hellTrapMeteorCount));
+                Vector3 meteorPoint = GroundPoint(PredictPlayer(.3f) +
+                    new Vector3(Random.Range(-2f, 2f), 0f, Random.Range(-2f, 2f)));
+                StartCoroutine(HellTrapMeteor(meteorPoint));
+            }
+            yield return null;
+        }
+        for (int i = 0; i < count; i++) RemoveBeamVisual(pillars[i]);
+        if (isDown || defeated || player == null) yield break;
+        GameObject finalWarning = CreateExplosionCircle(center, finalRadius,
+            new Color(1f, .7f, .12f, 1f), "HELL_TRAP_FINAL_WARNING");
+        yield return new WaitForSeconds(.85f);
+        RemoveBeamVisual(finalWarning);
+        if (isDown || defeated || player == null) yield break;
+        PlayOnce(slamImpactVFX != null ? slamImpactVFX : slamVFX, center);
+        if (FlatDistance(player.position, center) <= finalRadius &&
+            player.position.y >= center.y - 1.5f && player.position.y <= center.y + hellTrapPillarHeight)
+            DealHellTrapDamage(hellTrapFinalDamage);
+        GameObject flash = CreateExplosionCircle(center, finalRadius,
+            new Color(1f, .12f, .015f, 1f), "HELL_TRAP_FINAL_BLAST");
+        yield return new WaitForSeconds(.25f);
+        RemoveBeamVisual(flash);
+    }
+
+    private IEnumerator HellTrapMeteor(Vector3 location)
+    {
+        GameObject warning = CreateExplosionCircle(location, hellTrapMeteorRadius,
+            new Color(1f, .35f, .05f, 1f), "HELL_TRAP_METEOR_WARNING");
+        yield return new WaitForSeconds(Mathf.Max(.3f, hellTrapMeteorWarning));
+        RemoveBeamVisual(warning);
+        if (isDown || defeated || player == null) yield break;
+        PlayOnce(fireballImpactPrefab != null ? fireballImpactPrefab : slamImpactVFX, location);
+        if (FlatDistance(location, player.position) <= hellTrapMeteorRadius &&
+            player.position.y <= location.y + hellTrapPillarHeight)
+            DealHellTrapDamage(hellTrapMeteorDamage);
+    }
+
+    private void DealHellTrapDamage(float amount)
+    {
+        if (isDown || defeated || player == null) return;
+        if (playerEntity == null) playerEntity = player.GetComponentInParent<Entity>();
+        if (playerEntity != null) playerEntity.TakeDamage(Damage(amount), this);
+    }
+
     // RADIAL FIREBALL BARRAGE: surrounds boss and shoots outward
     // ==========================================
 
@@ -1719,8 +1954,10 @@ public class Boss : Entity
             {
                 float angle = (i + wave * .5f) * Mathf.PI * 2f / count;
                 Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                Vector3 spawn = transform.position + offset * rageKnifeSpreadRadius +
-                    Vector3.up * (1.7f + (i % 3) * .55f);
+                // All knives spawn level with the player's body, not at random heights.
+                float knifeY = player.position.y + knifeHeightOffset;
+                Vector3 spawn = transform.position + offset * rageKnifeSpreadRadius;
+                spawn.y = knifeY;
                 StartCoroutine(FlyRageKnife(spawn, i * .04f));
             }
             if (wave + 1 < waves) yield return new WaitForSeconds(.65f);
@@ -1735,6 +1972,12 @@ public class Boss : Entity
         while (t < windup && knife != null && !isDown && !defeated)
         {
             t += Time.deltaTime;
+            if (knifeFollowPlayerHeightDuringWindup && player != null)
+            {
+                Vector3 p = knife.transform.position;
+                p.y = player.position.y + knifeHeightOffset;
+                knife.transform.position = p;
+            }
             knife.transform.Rotate(0f, 150f * Time.deltaTime, 0f, Space.World);
             yield return null;
         }
@@ -1744,14 +1987,14 @@ public class Boss : Entity
             yield break;
         }
 
-        Vector3 direction = (player.position + Vector3.up - knife.transform.position).normalized;
+        Vector3 direction = (player.position + Vector3.up * knifeHeightOffset - knife.transform.position).normalized;
         float life = 0f;
         while (life < Mathf.Max(.2f, rageKnifeLifetime) &&
             knife != null && !isDown && !defeated && player != null)
         {
             float dt = Time.deltaTime;
             life += dt;
-            Vector3 target = player.position + Vector3.up * 1.05f + playerVelocity * .13f;
+            Vector3 target = player.position + Vector3.up * knifeHeightOffset + playerVelocity * .13f;
             Vector3 desired = target - knife.transform.position;
             if (desired.sqrMagnitude > .001f)
                 direction = Vector3.Slerp(direction, desired.normalized,
