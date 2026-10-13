@@ -6,7 +6,10 @@ public class LinearGameManager : BaseGameManager {
     public string nextScene;
     public string failedScene;
 
-    protected override void Start() {}
+    protected override void Start()
+    {
+        base.Start();
+    }
 
     protected override void AllMissionsCompletedHandler() {
         if (debugEnabled) Debug.Log("=== All missions completed ===");
