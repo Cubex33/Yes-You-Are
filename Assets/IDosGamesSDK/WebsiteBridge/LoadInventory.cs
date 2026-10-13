@@ -4,6 +4,8 @@ using UnityEngine;
 public class LoadInventory : MonoBehaviour
 {
     public IDosWebsiteBridge bridge;
+    public Material goldenSkeletonMaterial;
+
     [System.Serializable]
     public class InventoryResponse
     {
@@ -26,31 +28,71 @@ public class LoadInventory : MonoBehaviour
         public int quantity;
     }
 
+    private void FindBridge()
+    {
+        if (bridge == null)
+        {
+            bridge = FindAnyObjectByType<IDosWebsiteBridge>(
+                FindObjectsInactive.Include
+            );
+        }
+    }
+
     private void OnEnable()
     {
-        bridge.DataReceived += Receive;
+        FindBridge();
+
+        if (bridge != null)
+            bridge.DataReceived += Receive;
     }
 
     private void OnDisable()
     {
-        bridge.DataReceived -= Receive;
+        if (bridge != null)
+            bridge.DataReceived -= Receive;
+    }
+
+    private void Start()
+    {
+        RefreshInventory();
+    }
+
+    public void RefreshInventory()
+    {
+        if (bridge == null)
+        {
+            Debug.LogWarning("Назначь Bridge в Inspector.", this);
+            return;
+        }
+
+        bridge.RequestInventory();
     }
 
     public void Receive(string json)
     {
-        var response = JsonUtility.FromJson<InventoryResponse>(json);
+        InventoryResponse response;
 
-        // Этот метод получает также ответы на другие запросы.
+        try
+        {
+            response = JsonUtility.FromJson<InventoryResponse>(json);
+        }
+        catch (System.Exception)
+        {
+            Debug.LogWarning("Получен некорректный JSON.", this);
+            return;
+        }
+
         if (response == null || response.type != "inventory")
             return;
 
         if (!response.ok)
         {
-            Debug.LogWarning("Не удалось проверить инвентарь: " + response.error);
+            Debug.LogWarning(
+                "Не удалось проверить инвентарь: " + response.error,
+                this
+            );
             return;
         }
-
-        bool hasGoldenSkeleton = false;
 
         foreach (var item in response.data?.items
                  ?? System.Array.Empty<InventoryItem>())
@@ -59,18 +101,46 @@ public class LoadInventory : MonoBehaviour
                 && item.itemId == "golden_skeleton"
                 && item.quantity > 0)
             {
-                hasGoldenSkeleton = true;
-                break;
+                ApplyGoldenSkeleton();
+                return;
             }
         }
 
-        if (hasGoldenSkeleton)
+        Debug.Log("Золотого скелета нет.", this);
+    }
+
+    private void ApplyGoldenSkeleton()
+    {
+        if (goldenSkeletonMaterial == null)
         {
-            Debug.Log("Золотой скелет есть!");
+            Debug.LogWarning("Назначь материал скина.", this);
+            return;
         }
-        else
+
+        // Включает неактивные дочерние объекты.
+        var renderers = GetComponentsInChildren<Renderer>(true);
+
+        foreach (var target in renderers)
         {
-            Debug.Log("Золотого скелета нет.");
+            // Сам объект со скриптом пропускаем.
+            if (target.transform == transform)
+                continue;
+
+            var materials = target.sharedMaterials;
+            bool changed = false;
+
+            for (int i = 0; i < materials.Length; i++)
+            {
+                // Если материала нет, переходим к следующему слоту.
+                if (materials[i] == null)
+                    continue;
+
+                materials[i] = goldenSkeletonMaterial;
+                changed = true;
+            }
+
+            if (changed)
+                target.sharedMaterials = materials;
         }
     }
 }
