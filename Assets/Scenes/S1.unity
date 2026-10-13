@@ -14135,29 +14135,19 @@ PrefabInstance:
     - {fileID: 8492299999999999911, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 680000102}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
---- !u!1 &680000101 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+--- !u!114 &680000113 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8789753488628434490, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
   m_PrefabInstance: {fileID: 680000100}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &680000102
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 680000101}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3dd56c53409375f4e9b6718232bc2d80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyPickup
-  playerTag: Player
 --- !u!1001 &680000200
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14186,29 +14176,19 @@ PrefabInstance:
     - {fileID: 8492299999999999911, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 680000202}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
---- !u!1 &680000201 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+--- !u!114 &680000213 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8789753488628434490, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
   m_PrefabInstance: {fileID: 680000200}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &680000202
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 680000201}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3dd56c53409375f4e9b6718232bc2d80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyPickup
-  playerTag: Player
 --- !u!1001 &680000300
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14219,47 +14199,36 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2668389042000540583, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 217.5
+      value: 217.49
       objectReference: {fileID: 0}
     - target: {fileID: 2668389042000540583, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -24.1
+      value: -19.23
       objectReference: {fileID: 0}
     - target: {fileID: 2668389042000540583, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -325.21
+      value: -325.32
       objectReference: {fileID: 0}
     - target: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
       propertyPath: m_Name
       value: QuestKey_03
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 8492299999999999911, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 680000302}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
---- !u!1 &680000301 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+--- !u!114 &680000302 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8789753488628434490, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
   m_PrefabInstance: {fileID: 680000300}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &680000302
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 680000301}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3dd56c53409375f4e9b6718232bc2d80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyPickup
-  playerTag: Player
 --- !u!1001 &680000400
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14288,29 +14257,19 @@ PrefabInstance:
     - {fileID: 8492299999999999911, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 680000402}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
---- !u!1 &680000401 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+--- !u!114 &680000413 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8789753488628434490, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
   m_PrefabInstance: {fileID: 680000400}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &680000402
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 680000401}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3dd56c53409375f4e9b6718232bc2d80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyPickup
-  playerTag: Player
 --- !u!1 &680001001
 GameObject:
   m_ObjectHideFlags: 0
@@ -14411,10 +14370,10 @@ MonoBehaviour:
     \u043F\u0430\u043D\u0435\u043B\u044C \u043C\u043E\u0441\u0442\u0430"
   debugEnabled: 0
   keys:
-  - {fileID: 680000102}
-  - {fileID: 680000202}
+  - {fileID: 680000113}
+  - {fileID: 680000213}
   - {fileID: 680000302}
-  - {fileID: 680000402}
+  - {fileID: 680000413}
   bridgePanels:
   - {fileID: 6415808189043620044}
   - {fileID: 6415808189043620043}
