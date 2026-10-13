@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.AI;
 using Lucy.Core;
@@ -35,11 +36,15 @@ public abstract class EnemyBase : MonoBehaviour
 
     [Header("Ground Check")]
     public bool groundCheckEnable = true;
-    public Transform groundCheck;            
+    public Transform groundCheck;
     public float groundCheckRadius = 0.25f;
-    public LayerMask groundMask;            
-    public float landingVelocityThreshold = 0.5f; 
-    public float landingTimeThreshold = 0.12f; 
+    public LayerMask groundMask;
+    public float landingVelocityThreshold = 0.5f;
+    public float landingTimeThreshold = 0.12f;
+
+    [Header("NavMesh Recovery")]
+    [Tooltip("Максимальная дистанция поиска NavMesh после падения.")]
+    public float navMeshRecoveryRadius = 3f;
 
     [Header("Debug")]
     public bool drawGizmos = false;
@@ -50,11 +55,6 @@ public abstract class EnemyBase : MonoBehaviour
     public bool isGrounded = false;
     public float groundedSince = 0f;
 
-
-
-
-
-
     private EnemyState _currentState;
 
     public EnemyState CurrentState
@@ -62,10 +62,11 @@ public abstract class EnemyBase : MonoBehaviour
         get => _currentState;
         set
         {
-            if (_currentState == value) return;
+            if (_currentState == value)
+                return;
 
             _currentState = value;
-            // currentStateDisplay = CurrentState.ToString();
+            currentStateDisplay = value.ToString();
             OnStateChanged?.Invoke();
         }
     }
@@ -97,11 +98,22 @@ public abstract class EnemyBase : MonoBehaviour
 
     public virtual void Update()
     {
-        if ((Time.frameCount % 5 == 0) && IsTargetInDistance(visionDistance))
-            HandleState();
+        // Обрабатываем ИИ раз в пять кадров.
+        if (Time.frameCount % 5 != 0)
+            return;
+
+        // Idle не требует постоянной обработки вдали от игрока.
+        // Все остальные состояния должны продолжаться независимо от дистанции.
+        if (CurrentState == EnemyState.Idle &&
+            !IsTargetInDistance(visionDistance))
+        {
+            return;
+        }
+
+        HandleState();
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         UpdateGrounded();
     }
@@ -111,28 +123,38 @@ public abstract class EnemyBase : MonoBehaviour
         if (!groundCheckEnable)
         {
             isGrounded = false;
+            groundedSince = 0f;
             return;
         }
+
         if (groundCheck == null)
         {
             Vector3 origin = transform.position + Vector3.down * 0.1f;
-            isGrounded = Physics.CheckSphere(origin, groundCheckRadius, groundMask);
+            isGrounded = Physics.CheckSphere(
+                origin,
+                groundCheckRadius,
+                groundMask
+            );
         }
         else
         {
-            isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask);
+            isGrounded = Physics.CheckSphere(
+                groundCheck.position,
+                groundCheckRadius,
+                groundMask
+            );
         }
 
         if (isGrounded)
         {
-            if (groundedSince <= 0f) groundedSince = Time.time;
+            if (groundedSince <= 0f)
+                groundedSince = Time.time;
         }
         else
         {
             groundedSince = 0f;
         }
     }
-
 
     public virtual void HandleState()
     {
@@ -141,24 +163,31 @@ public abstract class EnemyBase : MonoBehaviour
             case EnemyState.Idle:
                 HandleIdle();
                 break;
+
             case EnemyState.Chase:
                 HandleChase();
                 break;
+
             case EnemyState.Attack:
                 HandleAttack();
                 break;
+
             case EnemyState.Stun:
                 HandleStun();
                 break;
+
             case EnemyState.Flee:
                 HandleFlee();
                 break;
+
             case EnemyState.Falling:
                 HandleFalling();
                 break;
+
             case EnemyState.Cooldown:
                 HandleCooldown();
                 break;
+
             default:
                 HandleCustomState();
                 break;
@@ -167,15 +196,23 @@ public abstract class EnemyBase : MonoBehaviour
 
     public virtual void HandleIdle()
     {
-        if (target == null) return;
+        if (target == null)
+            return;
     }
 
     public virtual void HandleChase()
     {
-        if (!agent.enabled) agent.enabled = true; 
+        if (!agent.enabled)
+        {
+            if (!TryRestoreAgentOnNavMesh())
+                return;
+        }
+
+        if (!agent.isOnNavMesh)
+            return;
+
         rb.isKinematic = true;
         agent.isStopped = false;
-
     }
 
     public virtual void HandleAttack()
@@ -190,15 +227,27 @@ public abstract class EnemyBase : MonoBehaviour
     public virtual void HandleStun()
     {
         stateTimer -= Time.deltaTime;
-        if (stateTimer <= 0f)
+
+        if (stateTimer > 0f)
+            return;
+
+        // Скелет может оказаться за пределами NavMesh после броска.
+        if (!TryRestoreAgentOnNavMesh())
         {
-            agent.enabled = true;
-            agent.isStopped = false;
-            rb.isKinematic = true;
-            rb.constraints = RigidbodyConstraints.FreezeRotation;
-            ResetCooldown();
-            CurrentState = EnemyState.Idle;
+            // Повторяем попытку, не застревая в вечном оглушении.
+            stateTimer = 0.5f;
+            return;
         }
+
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+
+        agent.isStopped = false;
+
+        ResetCooldown();
+        CurrentState = EnemyState.Idle;
     }
 
     public virtual void HandleFlee()
@@ -213,80 +262,182 @@ public abstract class EnemyBase : MonoBehaviour
 
         if (stateTimer <= 0f)
         {
-            agent.ResetPath();
+            if (agent.enabled && agent.isOnNavMesh)
+                agent.ResetPath();
+
             CurrentState = EnemyState.Idle;
             return;
         }
 
+        if (!agent.enabled || !agent.isOnNavMesh)
+            return;
+
         Vector3 dir = transform.position - target.transform.position;
-        agent.SetDestination(transform.position + dir.normalized * 5f);
+
+        if (dir.sqrMagnitude > 0.001f)
+            agent.SetDestination(transform.position + dir.normalized * 5f);
     }
 
     public virtual void HandleFalling()
     {
-        if (isGrounded && Mathf.Abs(rb.linearVelocity.y) <= landingVelocityThreshold && groundedSince > 0f && Time.time - groundedSince >= landingTimeThreshold)
+        if (!isGrounded)
+            return;
+
+        if (Mathf.Abs(rb.linearVelocity.y) > landingVelocityThreshold)
+            return;
+
+        if (groundedSince <= 0f ||
+            Time.time - groundedSince < landingTimeThreshold)
         {
-            rb.isKinematic = true;
-            agent.enabled = true;
-            ApplyStun(2.0f);
+            return;
         }
+
+        // Физика завершилась: останавливаем скелета и оглушаем его.
+        // NavMesh восстановим после окончания оглушения.
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+
+        stateTimer = 2f;
+        CurrentState = EnemyState.Stun;
     }
 
     public virtual void HandleCooldown()
     {
-        if (!IsOnCooldown) { CurrentState = EnemyState.Idle; }
+        if (!IsOnCooldown)
+            CurrentState = EnemyState.Idle;
     }
 
     public virtual void HandleCustomState() { }
 
-    public void StartCooldown(float duration) => cooldownUntil = Time.time + duration;
+    public void StartCooldown(float duration)
+    {
+        cooldownUntil = Time.time + duration;
+    }
 
-    public void ResetCooldown() => cooldownUntil = 0f;
+    public void ResetCooldown()
+    {
+        cooldownUntil = 0f;
+    }
 
     public virtual void ApplyStun(float? duration = null)
     {
         stateTimer = duration ?? stunDuration;
-        if (agent.enabled && agent.isOnNavMesh)
+
+        if (agent.enabled)
         {
-            agent.isStopped = true;
+            if (agent.isOnNavMesh)
+                agent.isStopped = true;
+
             agent.enabled = false;
         }
+
         rb.isKinematic = false;
-        rb.freezeRotation = false;
+        rb.constraints = RigidbodyConstraints.None;
+
         ResetCooldown();
         CurrentState = EnemyState.Stun;
     }
 
     public virtual void ApplyFlee()
     {
-        if (!agent.enabled) agent.enabled = true;
         stateTimer = fearDuration;
+
+        if (!agent.enabled && !TryRestoreAgentOnNavMesh())
+            return;
+
+        if (!agent.isOnNavMesh)
+            return;
+
+        rb.isKinematic = true;
         agent.isStopped = false;
+
         CurrentState = EnemyState.Flee;
     }
 
     public virtual void ApplyFalling()
     {
+        // Не сбрасываем таймер и состояние каждый кадр.
+        if (CurrentState == EnemyState.Falling)
+            return;
+
         ResetCooldown();
-        CurrentState = EnemyState.Falling;
-        agent.enabled = false;
+
+        groundCheckEnable = false;
+        isGrounded = false;
+        groundedSince = 0f;
+
+        if (agent.enabled)
+        {
+            if (agent.isOnNavMesh)
+                agent.isStopped = true;
+
+            agent.enabled = false;
+        }
+
         rb.isKinematic = false;
+        rb.constraints = RigidbodyConstraints.None;
+
+        CurrentState = EnemyState.Falling;
+    }
+
+    private bool TryRestoreAgentOnNavMesh()
+    {
+        if (agent == null || rb == null)
+            return false;
+
+        // Если агент уже корректно находится на NavMesh, используем его.
+        if (agent.enabled && agent.isOnNavMesh)
+            return true;
+
+        // Ищем ближайшую доступную точку NavMesh.
+        if (!NavMesh.SamplePosition(
+                transform.position,
+                out NavMeshHit hit,
+                navMeshRecoveryRadius,
+                agent.areaMask))
+        {
+            return false;
+        }
+
+        // Сначала переносим корень на найденную точку,
+        // затем включаем агент.
+        transform.position = hit.position;
+
+        if (!agent.enabled)
+            agent.enabled = true;
+
+        if (!agent.Warp(hit.position))
+        {
+            agent.enabled = false;
+            return false;
+        }
+
+        return agent.isOnNavMesh;
     }
 
     public bool IsTargetInDistance(float distance)
     {
-        if (target == null) return false;
-        
+        if (target == null)
+            return false;
+
         Vector3 origin = transform.position + Vector3.up * 0.5f;
         Vector3 dir = target.transform.position - origin;
-        
-        if (dir.sqrMagnitude > distance * distance) return false;
-        
-        if (Physics.Raycast(origin, dir.normalized, out RaycastHit hit, distance, obstacleMask))
+
+        if (dir.sqrMagnitude > distance * distance)
+            return false;
+
+        if (Physics.Raycast(
+                origin,
+                dir.normalized,
+                out RaycastHit hit,
+                distance,
+                obstacleMask))
         {
             return hit.collider.transform.root.gameObject == target;
         }
-        
+
         return true;
     }
 
@@ -294,21 +445,35 @@ public abstract class EnemyBase : MonoBehaviour
     {
         get
         {
-            if (target == null) return 0f;
-            return Vector3.Distance(transform.position, target.transform.position);
+            if (target == null)
+                return 0f;
+
+            return Vector3.Distance(
+                transform.position,
+                target.transform.position
+            );
         }
     }
 
     private void OnDrawGizmos()
     {
-        if (!drawGizmos) return;
-        Gizmos.color = Color.skyBlue;
+        if (!drawGizmos)
+            return;
+
+        Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, visionDistance);
+
         if (target != null)
         {
-            Vector3 direction = (target.transform.position - transform.position).normalized;
+            Vector3 direction =
+                (target.transform.position - transform.position).normalized;
+
             Gizmos.DrawRay(transform.position, direction * rangeDistance);
-            Gizmos.DrawSphere(transform.position + direction * rangeDistance, 0.1f);
+            Gizmos.DrawSphere(
+                transform.position + direction * rangeDistance,
+                0.1f
+            );
+
             Gizmos.color = Color.red;
             Gizmos.DrawRay(transform.position, direction * meleeDistance);
         }
@@ -316,9 +481,9 @@ public abstract class EnemyBase : MonoBehaviour
         {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, rangeDistance);
+
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, meleeDistance);
         }
     }
-
 }

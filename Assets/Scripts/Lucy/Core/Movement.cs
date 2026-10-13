@@ -16,9 +16,12 @@ namespace Lucy.Core
         public bool doubleJumpEnabled = true;
 
         [Header("Speed Growth")]
-        public float speedGrowPerSecond = 0.5f; 
-        public float minSpeedMultiplier = 1f;    
-        public float stopResetMultiplier = 1f;   
+        public float speedGrowPerSecond = 0.5f;
+        public float minSpeedMultiplier = 1f;
+        public float stopResetMultiplier = 1f;
+
+        [Tooltip("Максимальный множитель скорости при разгоне в воздухе")]
+        public float maxSpeedMultiplier = 8f;
 
         [Header("Gravity Settings")]
         public float groundedGravity = -2f;
@@ -51,7 +54,17 @@ namespace Lucy.Core
         {
             if (Controller.isGrounded && velocity.y < 0) velocity.y = groundedGravity;
             else velocity.y += gravity * Time.deltaTime;
-            if (IsMoving) { if (!Controller.isGrounded) speedMultiplier += speedGrowPerSecond * Time.deltaTime; }
+            if (IsMoving)
+            {
+                if (!Controller.isGrounded)
+                {
+                    speedMultiplier = Mathf.MoveTowards(
+                        speedMultiplier,
+                        maxSpeedMultiplier,
+                        speedGrowPerSecond * Time.deltaTime
+                    );
+                }
+            }
             else
             {
                 speedMultiplier = stopResetMultiplier;

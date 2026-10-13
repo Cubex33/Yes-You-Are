@@ -1445,10 +1445,16 @@ public partial class @GlobalController: IInputActionCollection2, IDisposable
     /// <summary>
     /// Destroys this asset and all associated <see cref="InputAction"/> instances.
     /// </summary>
+
     public void Dispose()
     {
+        if (asset == null)
+            return;
+
+        asset.Disable();
         UnityEngine.Object.Destroy(asset);
     }
+
 
     /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindingMask" />
     public InputBinding? bindingMask

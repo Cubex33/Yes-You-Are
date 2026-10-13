@@ -1,5 +1,4 @@
-using System;
-using Lucy.Core;
+
 using UnityEngine;
 
 [RequireComponent(typeof(EnemyBase))]
@@ -9,83 +8,58 @@ public class FleeEntityAnimation : MonoBehaviour
     [Header("Runtime")]
     public Animator animator;
     public EnemyBase enemyBase;
-    void Awake()
+
+    private void Awake()
     {
         enemyBase = GetComponent<EnemyBase>();
         animator = GetComponent<Animator>();
-        enemyBase.OnStateChanged += handleStateChanged;
+
+        enemyBase.OnStateChanged += HandleStateChanged;
     }
 
-    private void handleStateChanged()
+    private void Start()
     {
+        // Применяем анимацию текущего состояния после инициализации EnemyBase.
+        HandleStateChanged();
+    }
+
+    private void OnDestroy()
+    {
+        if (enemyBase != null)
+            enemyBase.OnStateChanged -= HandleStateChanged;
+    }
+
+    private void HandleStateChanged()
+    {
+        if (enemyBase == null || animator == null)
+            return;
+
         switch (enemyBase.CurrentState)
         {
-            case EnemyState.Idle:
-                HandleIdle();
-                break;
-            case EnemyState.Chase:
-                HandleChase();
-                break;
-            case EnemyState.Attack:
-                HandleAttack();
-                break;
             case EnemyState.Stun:
-                HandleStun();
-                break;
-            case EnemyState.Flee:
-                HandleFlee();
-                break;
             case EnemyState.Falling:
-                HandleFalling();
+                animator.enabled = false;
                 break;
+
+            case EnemyState.Flee:
+                EnableAnimator();
+                animator.SetBool("Flee", true);
+                break;
+
+            case EnemyState.Idle:
+            case EnemyState.Patrol:
+            case EnemyState.Chase:
+            case EnemyState.Attack:
             case EnemyState.Cooldown:
-                HandleCooldown();
-                break;
             default:
-                HandleCustomState();
+                EnableAnimator();
+                animator.SetBool("Flee", false);
                 break;
         }
     }
 
-    private void HandleCustomState()
-    {
-        throw new NotImplementedException();
-    }
-
-    private void HandleCooldown()
-    {
-        throw new NotImplementedException();
-    }
-
-    private void HandleFalling()
-    {
-        animator.enabled = false;
-    }
-
-    private void HandleFlee()
+    private void EnableAnimator()
     {
         animator.enabled = true;
-        animator.SetBool("Flee", true);
-    }
-
-    private void HandleStun()
-    {
-        animator.enabled = false;
-    }
-
-    private void HandleAttack()
-    {
-        throw new NotImplementedException();
-    }
-
-    private void HandleChase()
-    {
-        throw new NotImplementedException();
-    }
-
-    private void HandleIdle()
-    {
-        animator.enabled = true;
-        animator.SetBool("Flee", false);
     }
 }
