@@ -8,7 +8,6 @@ public class SkeletDie : MonoBehaviour
 {
     public Entity entity;
     public PlayableDirector PlayableDirector;
-    public IDosWebsiteBridge bridge;
 
     private void Start()
     {
@@ -20,7 +19,6 @@ public class SkeletDie : MonoBehaviour
         if (entity.Health <= 0 || entity.IsDead)
         {
             PlayableDirector.Play();
-            bridge.ReportGameCompleted();
         }
     }
 }

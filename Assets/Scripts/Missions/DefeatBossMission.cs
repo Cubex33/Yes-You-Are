@@ -8,7 +8,6 @@ public class DefeatBossMission : BaseMission
 {
     [SerializeField] private Entity boss;
     [SerializeField] private TMP_Text objectiveText;
-    public IDosWebsiteBridge bridge;
 
     public override void StartMission()
     {
@@ -34,7 +33,6 @@ public class DefeatBossMission : BaseMission
         if (boss != null) boss.OnDeath -= OnBossDeath;
         if (objectiveText != null) objectiveText.text = "Босс побеждён!";
         QuestProgressHUD.Show("Босс побеждён!", 1, 1);
-        bridge.ReportGameCompleted();
         CompleteMission();
     }
 
