@@ -6,12 +6,13 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using Lucy.Core;
 
-/// <summary>Collects unique scene keys and raises bridge panels in a fixed order.</summary>
+/// <summary>Raises the whole bridge in proportion to the collected coins.</summary>
 public class BridgeKeyMission : BaseMission
 {
     [SerializeField] private List<BridgeKeyPickup> keys = new();
     [SerializeField] private List<Transform> bridgePanels = new();
-    [SerializeField] private float panelRaiseHeight = 3f;
+    [Min(0f)]
+    [SerializeField] private float raiseHeightPerCoin = 4f;
     [SerializeField] private float panelRaiseDuration = 0.8f;
     [SerializeField] private TMP_Text progressText;
     [SerializeField] private Slider progressBar;
@@ -20,10 +21,10 @@ public class BridgeKeyMission : BaseMission
     private readonly HashSet<BridgeKeyPickup> collected = new();
     private readonly List<Vector3> panelStartPositions = new();
     private Coroutine raiseRoutine;
-    private int raisedPanelCount;
     private bool allKeysCollected;
     public int CollectedCount => collected.Count;
     public int RequiredCount => keys == null ? 0 : keys.Count;
+    private float TotalRaiseHeight => raiseHeightPerCoin * RequiredCount;
 
     private void Awake()
     {
@@ -34,7 +35,7 @@ public class BridgeKeyMission : BaseMission
 
     private void ResolveBridgePanels()
     {
-        if (bridgePanels != null && bridgePanels.Count >= 4) return;
+        if (bridgePanels != null && bridgePanels.Count > 0) return;
         var found = new List<Transform>();
         foreach (Transform item in FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
         {
@@ -56,7 +57,6 @@ public class BridgeKeyMission : BaseMission
     {
         if (isActive || isCompleted) return;
         collected.Clear();
-        raisedPanelCount = 0;
         allKeysCollected = false;
         foreach (var key in keys)
         {
@@ -64,92 +64,106 @@ public class BridgeKeyMission : BaseMission
             key.SetCollected(false);
             key.Collected += HandleKeyCollected;
         }
-        if (bridgePanels.Count != RequiredCount)
-            Debug.LogError($"{nameof(BridgeKeyMission)} needs one bridge panel for each key ({RequiredCount} keys, {bridgePanels.Count} panels).", this);
         SetPanelsLowered();
         base.StartMission();
         UpdateProgress();
-        QuestProgressHUD.Show("Соберите ключи", collected.Count, RequiredCount);
-        if (RequiredCount == 0) CompleteMission();
+        if (RequiredCount == 0)
+        {
+            SetBridgeProgress(1f);
+            CompleteMission();
+        }
     }
 
     private void SetPanelsLowered()
     {
-        for (int i = 0; i < bridgePanels.Count; i++)
-            if (bridgePanels[i] != null && i < panelStartPositions.Count)
-                bridgePanels[i].position = panelStartPositions[i] - Vector3.up * panelRaiseHeight;
+        SetBridgeProgress(0f);
     }
 
     private void HandleKeyCollected(BridgeKeyPickup key)
     {
-        if (!isActive || key == null || !collected.Add(key)) return;
+        if (!isActive || key == null || !keys.Contains(key) || !collected.Add(key)) return;
         key.Collected -= HandleKeyCollected;
-        if (raiseRoutine == null && raisedPanelCount < collected.Count)
-            raiseRoutine = StartCoroutine(RaiseNextPanel());
+        if (raiseRoutine != null) StopCoroutine(raiseRoutine);
+        raiseRoutine = null;
+        allKeysCollected = collected.Count >= RequiredCount;
         UpdateProgress();
-        if (collected.Count >= RequiredCount)
+        if (panelRaiseDuration <= 0f)
         {
-            allKeysCollected = true;
-            QuestProgressHUD.Show("Все ключи собраны — поднимите мост", collected.Count, RequiredCount);
-            onAllKeysCollected?.Invoke();
-            if (raisedPanelCount >= RequiredCount && bridgePanels.Count == RequiredCount)
-                CompleteMission();
+            SetBridgeProgress((float)collected.Count / RequiredCount);
+            FinishBridgeRaise();
         }
+        else
+            raiseRoutine = StartCoroutine(RaiseBridge());
     }
 
-    private IEnumerator RaiseNextPanel()
+    private void SetBridgeProgress(float progress)
     {
-        int index = raisedPanelCount;
-        if (index >= bridgePanels.Count)
-        {
-            raiseRoutine = null;
-            yield break;
-        }
-        Transform panel = bridgePanels[index];
-        if (panel == null)
-        {
-            raiseRoutine = null;
-            Debug.LogError($"{nameof(BridgeKeyMission)}: assign bridge panel #{index + 1} in the Inspector.", this);
-            yield break;
-        }
-        Vector3 from = panel.position;
-        Vector3 to = panelStartPositions[index];
+        for (int i = 0; i < bridgePanels.Count; i++)
+            if (bridgePanels[i] != null && i < panelStartPositions.Count)
+                bridgePanels[i].position = panelStartPositions[i]
+                    - Vector3.up * (TotalRaiseHeight * (1f - Mathf.Clamp01(progress)));
+    }
+
+    private IEnumerator RaiseBridge()
+    {
+        float progress = (float)collected.Count / RequiredCount;
+        var from = new Vector3[bridgePanels.Count];
+        for (int i = 0; i < bridgePanels.Count; i++)
+            if (bridgePanels[i] != null) from[i] = bridgePanels[i].position;
         float elapsed = 0f;
         while (elapsed < panelRaiseDuration)
         {
             elapsed += Time.deltaTime;
-            panel.position = Vector3.Lerp(from, to, Mathf.Clamp01(elapsed / panelRaiseDuration));
+            for (int i = 0; i < bridgePanels.Count; i++)
+            {
+                if (bridgePanels[i] == null || i >= panelStartPositions.Count) continue;
+                Vector3 to = panelStartPositions[i] - Vector3.up * (TotalRaiseHeight * (1f - progress));
+                bridgePanels[i].position = Vector3.Lerp(from[i], to, Mathf.Clamp01(elapsed / panelRaiseDuration));
+            }
             yield return null;
         }
-        panel.position = to;
-        raisedPanelCount++;
+        SetBridgeProgress(progress);
         raiseRoutine = null;
-        if (raisedPanelCount < collected.Count && isActive)
-            raiseRoutine = StartCoroutine(RaiseNextPanel());
-        else if (allKeysCollected && isActive && raisedPanelCount >= RequiredCount && bridgePanels.Count == RequiredCount)
-            CompleteMission();
+        FinishBridgeRaise();
+    }
+
+    private void FinishBridgeRaise()
+    {
+        if (!isActive || !allKeysCollected) return;
+        onAllKeysCollected?.Invoke();
+        CompleteMission();
     }
 
     private void UpdateProgress()
     {
+        if (isActive) QuestProgressHUD.Show(allKeysCollected ? "Монеты собраны — мост поднимается" : "Соберите монеты — поднимите мост", collected.Count, RequiredCount);
+        ResolveProgressBar();
         if (progressText != null)
-            progressText.text = $"Соберите ключи: {collected.Count}/{RequiredCount}";
+            progressText.text = $"Монеты: {collected.Count}/{RequiredCount}";
         if (progressBar != null)
         {
             progressBar.minValue = 0;
             progressBar.maxValue = Mathf.Max(1, RequiredCount);
             progressBar.value = collected.Count;
         }
-        if (isActive) QuestProgressHUD.Show(allKeysCollected ? "Мост открыт — победите босса" : "Соберите ключи", collected.Count, RequiredCount);
+    }
+
+    private void ResolveProgressBar()
+    {
+        if (progressBar != null) return;
+        foreach (var slider in FindObjectsByType<Slider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (slider.gameObject.name != "QuestProgress") continue;
+            progressBar = slider;
+            break;
+        }
     }
 
     private void OnGUI()
     {
         if (isActive && progressText == null)
         {
-            string message = allKeysCollected && bridgePanels.Count != RequiredCount
-                ? "Ключи собраны — назначьте панели моста в инспекторе."
-                : $"Ключи: {collected.Count}/{RequiredCount}";
+            string message = $"Монеты: {collected.Count}/{RequiredCount}";
             GUI.Box(new Rect(24f, 24f, 440f, 42f), message);
         }
     }
@@ -165,11 +179,8 @@ public class BridgeKeyMission : BaseMission
             key.SetCollected(false);
         }
         collected.Clear();
-        raisedPanelCount = 0;
         allKeysCollected = false;
-        for (int i = 0; i < bridgePanels.Count; i++)
-            if (bridgePanels[i] != null && i < panelStartPositions.Count)
-                bridgePanels[i].position = panelStartPositions[i] - Vector3.up * panelRaiseHeight;
+        SetPanelsLowered();
         base.ResetMission();
         UpdateProgress();
         QuestProgressHUD.Hide();

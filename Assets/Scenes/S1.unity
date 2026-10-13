@@ -7734,6 +7734,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f9bc7d2b1edf47d41869d6fbb724c712, type: 3}
   m_PrefabInstance: {fileID: 7860442386092019392}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &383986680
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 383986682}
+  - component: {fileID: 383986681}
+  m_Layer: 0
+  m_Name: IdosBridge
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &383986681
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 383986680}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0116678d20a71994b962058fc85079f6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IDosGames.WebBridge.IDosWebsiteBridge
+  onDataReceived:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!4 &383986682
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 383986680}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 15.09164, y: 6.63232, z: -281.61206}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &385402864
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13118,11 +13165,33 @@ PrefabInstance:
       propertyPath: m_Name
       value: QuestKey_01
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8492299999999999911, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 680000102}
   m_SourcePrefab: {fileID: 100100000, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+--- !u!1 &680000101 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+  m_PrefabInstance: {fileID: 680000100}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &680000102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 680000101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dd56c53409375f4e9b6718232bc2d80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyPickup
+  playerTag: Player
 --- !u!1001 &680000200
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13147,11 +13216,33 @@ PrefabInstance:
       propertyPath: m_Name
       value: QuestKey_02
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8492299999999999911, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 680000202}
   m_SourcePrefab: {fileID: 100100000, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+--- !u!1 &680000201 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+  m_PrefabInstance: {fileID: 680000200}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &680000202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 680000201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dd56c53409375f4e9b6718232bc2d80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyPickup
+  playerTag: Player
 --- !u!1001 &680000300
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13176,11 +13267,33 @@ PrefabInstance:
       propertyPath: m_Name
       value: QuestKey_03
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8492299999999999911, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 680000302}
   m_SourcePrefab: {fileID: 100100000, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+--- !u!1 &680000301 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+  m_PrefabInstance: {fileID: 680000300}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &680000302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 680000301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dd56c53409375f4e9b6718232bc2d80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyPickup
+  playerTag: Player
 --- !u!1001 &680000400
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13205,11 +13318,33 @@ PrefabInstance:
       propertyPath: m_Name
       value: QuestKey_04
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8492299999999999911, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 680000402}
   m_SourcePrefab: {fileID: 100100000, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+--- !u!1 &680000401 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3641226688781965368, guid: 1e47db0ce2987754e9ab52c9e48a68be, type: 3}
+  m_PrefabInstance: {fileID: 680000400}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &680000402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 680000401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dd56c53409375f4e9b6718232bc2d80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyPickup
+  playerTag: Player
 --- !u!1 &680001001
 GameObject:
   m_ObjectHideFlags: 0
@@ -13310,16 +13445,16 @@ MonoBehaviour:
     \u043F\u0430\u043D\u0435\u043B\u044C \u043C\u043E\u0441\u0442\u0430"
   debugEnabled: 0
   keys:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 680000102}
+  - {fileID: 680000202}
+  - {fileID: 680000302}
+  - {fileID: 680000402}
   bridgePanels:
   - {fileID: 6415808189043620044}
   - {fileID: 6415808189043620043}
   - {fileID: 6415808189043620042}
   - {fileID: 264643211}
-  panelRaiseHeight: 3
+  raiseHeightPerCoin: 4
   panelRaiseDuration: 0.8
   progressText: {fileID: 44619156}
   progressBar: {fileID: 0}
@@ -13377,6 +13512,7 @@ MonoBehaviour:
   debugEnabled: 0
   boss: {fileID: 1848597282}
   objectiveText: {fileID: 44619156}
+  bridge: {fileID: 0}
 --- !u!1 &687721654
 GameObject:
   m_ObjectHideFlags: 0
@@ -52379,13 +52515,36 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 511320179552453851, guid: 28023e6112411a44eb25ce251f676c0c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8686689906694800046}
   m_SourcePrefab: {fileID: 100100000, guid: 28023e6112411a44eb25ce251f676c0c, type: 3}
 --- !u!4 &8686689906694800044 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8717238199707295742, guid: 28023e6112411a44eb25ce251f676c0c, type: 3}
   m_PrefabInstance: {fileID: 8686689906694800043}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8686689906694800045 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 511320179552453851, guid: 28023e6112411a44eb25ce251f676c0c, type: 3}
+  m_PrefabInstance: {fileID: 8686689906694800043}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8686689906694800046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8686689906694800045}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0116678d20a71994b962058fc85079f6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::IDosGames.WebBridge.IDosWebsiteBridge
+  onDataReceived:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &8693081897454626530
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -53252,3 +53411,4 @@ SceneRoots:
   - {fileID: 212622521}
   - {fileID: 1665367652}
   - {fileID: 1624540382}
+  - {fileID: 383986682}
