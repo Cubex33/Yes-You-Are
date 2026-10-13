@@ -29,7 +29,7 @@ public class PlayerControlTutorialMission : BaseMission
         if (tutorialCanvas != null) tutorialCanvas.gameObject.SetActive(true);
         base.StartMission();
         UpdateInstructions();
-        QuestProgressHUD.Show("Обучение: гравимагия", 0, 4);
+        QuestProgressHUD.Show("Обучение: Гравимагия (Right Mouse)", 0, 4);
     }
 
     private bool IsPlayer(PlayerController source) => player == null || source == player;
