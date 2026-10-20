@@ -17,6 +17,7 @@ public class PlayerController : FPPController
     public Gravitation gravitation;
     public bool gravitationHolding = false;
     private bool chargingInputWasHeld;
+    private bool gravityLaunchLocked;
     protected override void Awake()
     {
         base.Awake();
@@ -24,13 +25,31 @@ public class PlayerController : FPPController
         gravitation = GetComponent<Gravitation>();
         InputProvider.Global.Controls.Player.Attack.performed += _ =>
         {
-            bool wasSuperAttack = knockdownAttack.isRecovery && knockdownAttack.IsFullStamina;
+            bool wasHoldingObject = gravitation.IsGrabbing;
+
+            bool wasSuperAttack =
+                knockdownAttack.isRecovery && knockdownAttack.IsFullStamina;
+
             knockdownAttack.Attack();
+
+            // Если ЛКМ запустила удерживаемый предмет,
+            // запрещаем повторный захват до отпускания ПКМ.
+            if (wasHoldingObject && !gravitation.IsGrabbing)
+                gravityLaunchLocked = true;
+
             if (wasSuperAttack && !knockdownAttack.IsFullStamina)
                 SuperAttackUsed?.Invoke(this);
         };
-        InputProvider.Global.Controls.Player.Grab.performed += _ => gravitationHolding = true;
-        InputProvider.Global.Controls.Player.Grab.canceled += _ => gravitationHolding = false;
+        InputProvider.Global.Controls.Player.Grab.performed += _ =>
+        {
+            gravitationHolding = true;
+        };
+
+        InputProvider.Global.Controls.Player.Grab.canceled += _ =>
+        {
+            gravitationHolding = false;
+            gravityLaunchLocked = false;
+        };
         InputProvider.Global.Controls.Player.Scroll.performed += AdjustGrabDistance;
     }
 
@@ -48,13 +67,18 @@ public class PlayerController : FPPController
 
     void FixedUpdate()
     {
-        if (gravitationHolding)
+        if (gravityLaunchLocked)
+            return;
+
+        if (gravitationHolding && !gravitation.IsGrabbing)
         {
             bool wasGrabbing = gravitation.IsGrabbing;
             gravitation.Grab();
+
             if (!wasGrabbing && gravitation.IsGrabbing)
                 GravityGrabUsed?.Invoke(this);
-        } else
+        }
+        else if (!gravitationHolding && gravitation.IsGrabbing)
         {
             gravitation.Release();
         }

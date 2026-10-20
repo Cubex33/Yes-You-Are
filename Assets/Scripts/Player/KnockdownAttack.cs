@@ -56,11 +56,39 @@ public class KnockdownAttack : MonoBehaviour
         RecoverStamina();
     }
 
+
     public void Attack()
     {
-        if (mainCamera == null) return;
-        else if (isRecovery && currentStamina >= maxStamina) SpecialAreaAttack();
-        else if (!isRecovery && currentStamina >= staminaCostPerAttack) PerformAttack();
+        if (mainCamera == null)
+            return;
+
+        // Если гравипушка удерживает объект, ЛКМ запускает его.
+        // В остальных случаях атака работает по старым правилам.
+        PlayerController playerController = GetComponent<PlayerController>();
+
+        if (playerController != null &&
+            playerController.gravitation != null &&
+            playerController.gravitation.IsGrabbing)
+        {
+            GameObject launchedObject =
+                playerController.gravitation.LaunchHeldObject(
+                    mainCamera.transform.forward
+                );
+
+            if (launchedObject != null)
+                OnAttack?.Invoke(launchedObject);
+
+            return;
+        }
+
+        if (isRecovery && currentStamina >= maxStamina)
+        {
+            SpecialAreaAttack();
+        }
+        else if (!isRecovery && currentStamina >= staminaCostPerAttack)
+        {
+            PerformAttack();
+        }
     }
 
     void SpendStamina()

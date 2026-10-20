@@ -139,6 +139,48 @@ public class Boss : Entity
     [SerializeField] private float ringSpawnRadius = 2.5f;
     [SerializeField] private float ringWindup = 0.7f;
 
+
+    [Header("BOSS SHIELD ABILITY")]
+    [SerializeField] private bool enableShieldPhase = true;
+    [Tooltip("Радиус зелёного магического купола.")]
+    [SerializeField, Min(1f)] private float shieldRadius = 3.2f;
+    [Tooltip("Высота центра купола относительно босса.")]
+    [SerializeField] private float shieldVerticalOffset = 2f;
+    [Tooltip("Перезарядка способности щита.")]
+    [SerializeField, Min(5f)] private float shieldCooldown = 25f;
+    [Tooltip("Сколько секунд щит остаётся активным.")]
+    [SerializeField, Min(2f)] private float shieldDuration = 12f;
+    [Tooltip("Задержка после анимации призыва перед появлением щита.")]
+    [SerializeField, Min(0.1f)] private float shieldSummonWindup = 1f;
+    [Tooltip("Интервал между мечами, выпускаемыми щитом.")]
+    [SerializeField, Min(0.5f)] private float shieldSwordInterval = 2.5f;
+    [Tooltip("Урон одного меча.")]
+    [SerializeField, Min(0f)] private float shieldSwordDamage = 12f;
+    [Tooltip("Скорость полёта меча.")]
+    [SerializeField, Min(1f)] private float shieldSwordSpeed = 18f;
+    [Tooltip("Сколько секунд меч живёт, если не попал в игрока.")]
+    [SerializeField, Min(0.5f)] private float shieldSwordLifetime = 3f;
+    [SerializeField, Min(0.1f)] private float shieldSwordHitRadius = 0.9f;
+    [SerializeField, Min(0f)] private float shieldSwordTurnSpeed = 8f;
+    [SerializeField, Min(0f)] private float shieldSwordWindup = 0.4f;
+    [Tooltip("Интервал между попытками призвать скелета во время щита.")]
+    [SerializeField, Min(1f)] private float shieldSkeletonInterval = 5f;
+    [Tooltip("Максимум скелетов, призываемых за одно применение щита.")]
+    [SerializeField, Range(0, 5)] private int shieldMaxSummonsPerActivation = 3;
+    [SerializeField] private Color shieldColor = new Color(0.05f, 1f, 0.2f, 0.22f);
+
+    private bool shieldActive;
+    private bool shieldCasting;
+    private GameObject shieldVisual;
+    private float nextShieldAbility;
+    private float shieldEndsAt;
+    private float nextShieldVolley;
+    private float nextShieldSkeleton;
+    private int shieldSummonsSpawned;
+    private ThrownObjectDamage shieldBreakingProjectile;
+    private float shieldBrokenAt = -100f;
+
+
     [Header("RAGE CHAOS - Homing Knives")]
     [SerializeField] private bool enableRageKnifeStorm = true;
     [Tooltip("Optional knife model prefab. Its forward (blue Z) points toward the tip.")]
@@ -306,7 +348,64 @@ public class Boss : Entity
         OnDeath -= HandleBossDeath;
         ClearBeamVisuals();
         ClearKnifeVisuals();
+        RemoveShieldVisual();
     }
+
+
+    public override void TakeDamage(float amount, object source = null)
+    {
+        if (shieldActive)
+        {
+            // Щит разрушается только от предмета,
+            // запущенного гравимагией.
+            if (source is ThrownObjectDamage projectile &&
+                projectile.IsArmed)
+            {
+                TryBreakShield(projectile);
+            }
+
+            // Кулаки, магические атаки и прочий урон
+            // полностью блокируются активным щитом.
+            return;
+        }
+
+        // Не даём тому же предмету нанести урон боссу
+        // повторно в момент разрушения купола.
+        if (source is ThrownObjectDamage recentProjectile &&
+            recentProjectile == shieldBreakingProjectile &&
+            Time.time - shieldBrokenAt < 0.25f)
+        {
+            return;
+        }
+
+        base.TakeDamage(amount, source);
+    }
+
+    public void TryBreakShield(ThrownObjectDamage projectile)
+    {
+        if (!shieldActive || projectile == null || !projectile.IsArmed)
+            return;
+
+        shieldActive = false;
+        shieldEndsAt = Time.time;
+        shieldBreakingProjectile = projectile;
+        shieldBrokenAt = Time.time;
+
+        RemoveShieldVisual();
+
+        // Убираем мечи, выпущенные во время фазы щита.
+        ClearKnifeVisuals();
+
+        // Даём боссу небольшую паузу перед обычным боем.
+        nextAction = Time.time + 0.75f;
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+            agent.isStopped = false;
+
+        if (debugBoss)
+            Debug.Log("Boss shield broken by a gravity-launched object!");
+    }
+
 
     private void HandleBossDamage(float amount, object source)
     {
@@ -395,6 +494,11 @@ public class Boss : Entity
 
         Animate("Stand");
 
+        // Щит — временная способность, а не постоянная фаза с начала боя.
+        shieldActive = false;
+        shieldCasting = false;
+        nextShieldAbility = availableAt + Random.Range(8f, 14f);
+
         CheckLowHealth();
     }
 
@@ -425,6 +529,9 @@ public class Boss : Entity
         StopAllCoroutines();
         ClearBeamVisuals();
         ClearKnifeVisuals();
+
+        shieldActive = false;
+        RemoveShieldVisual();
 
         acting = false;
         stunned = false;
@@ -460,6 +567,180 @@ public class Boss : Entity
             );
         }
     }
+
+
+    private IEnumerator ShieldAbilityRoutine()
+    {
+        if (isDown || defeated || player == null || shieldActive || shieldCasting)
+            yield break;
+
+        shieldCasting = true;
+        acting = true;
+        StopAgent();
+        FaceTarget();
+        Animate("Summon");
+
+        yield return new WaitForSeconds(Mathf.Max(0.1f, shieldSummonWindup));
+
+        if (isDown || defeated || player == null)
+        {
+            shieldCasting = false;
+            acting = false;
+            yield break;
+        }
+
+        shieldCasting = false;
+        shieldActive = true;
+        CreateShieldVisual();
+        shieldEndsAt = Time.time + shieldDuration;
+        nextShieldVolley = Time.time + 1f;
+        nextShieldSkeleton = Time.time + shieldSkeletonInterval;
+        shieldSummonsSpawned = 0;
+
+        while (shieldActive && !isDown && !defeated)
+        {
+            if (Time.time >= shieldEndsAt)
+            {
+                shieldActive = false;
+                RemoveShieldVisual();
+                ClearKnifeVisuals();
+                break;
+            }
+
+            if (Time.time >= nextShieldSkeleton &&
+                shieldSummonsSpawned < shieldMaxSummonsPerActivation)
+            {
+                nextShieldSkeleton = Time.time + shieldSkeletonInterval;
+                SpawnShieldSkeleton();
+            }
+
+            yield return null;
+        }
+
+        shieldCasting = false;
+        shieldActive = false;
+        RemoveShieldVisual();
+        acting = false;
+        nextAction = Time.time + 0.75f;
+
+        if (agent != null && agent.enabled && agent.isOnNavMesh)
+            agent.isStopped = false;
+    }
+
+    private void SpawnShieldSkeleton()
+    {
+        if (skeletonPrefab == null || isDown || defeated ||
+            shieldSummonsSpawned >= shieldMaxSummonsPerActivation)
+            return;
+
+        summons.RemoveAll(s => s == null);
+        if (summons.Count >= maxLivingSummons)
+            return;
+
+        Vector3 desired = transform.position + Random.insideUnitSphere * summonRadius;
+        desired.y = transform.position.y;
+
+        int areaMask = agent != null ? agent.areaMask : NavMesh.AllAreas;
+        if (!NavMesh.SamplePosition(desired, out NavMeshHit hit, 4f, areaMask))
+            return;
+
+        PlayOnce(summonVFX, hit.position);
+        GameObject skeleton = Instantiate(skeletonPrefab, hit.position, Quaternion.identity);
+        summons.Add(skeleton);
+        shieldSummonsSpawned++;
+    }
+
+
+    private void CreateShieldVisual()
+    {
+        RemoveShieldVisual();
+
+        shieldVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        shieldVisual.name = "Boss_Green_Magic_Shield";
+        shieldVisual.transform.SetParent(transform, false);
+        shieldVisual.transform.localPosition =
+            Vector3.up * shieldVerticalOffset;
+        shieldVisual.transform.localRotation = Quaternion.identity;
+        shieldVisual.transform.localScale =
+            Vector3.one * (shieldRadius * 2f);
+
+        SphereCollider sphere =
+            shieldVisual.GetComponent<SphereCollider>();
+
+        if (sphere != null)
+            sphere.isTrigger = true;
+
+        Renderer shieldRenderer =
+            shieldVisual.GetComponent<Renderer>();
+
+        Shader shader =
+            Shader.Find("Universal Render Pipeline/Unlit");
+
+        if (shader == null)
+            shader = Shader.Find("Sprites/Default");
+
+        if (shieldRenderer != null && shader != null)
+        {
+            Material material = new Material(shader);
+
+            if (material.HasProperty("_BaseColor"))
+                material.SetColor("_BaseColor", shieldColor);
+
+            if (material.HasProperty("_Color"))
+                material.SetColor("_Color", shieldColor);
+
+            if (material.HasProperty("_Surface"))
+                material.SetFloat("_Surface", 1f);
+
+            if (material.HasProperty("_Blend"))
+                material.SetFloat("_Blend", 0f);
+
+            if (material.HasProperty("_ZWrite"))
+                material.SetFloat("_ZWrite", 0f);
+
+            if (material.HasProperty("_SrcBlend"))
+                material.SetFloat(
+                    "_SrcBlend",
+                    (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+
+            if (material.HasProperty("_DstBlend"))
+                material.SetFloat(
+                    "_DstBlend",
+                    (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+
+            material.SetOverrideTag("RenderType", "Transparent");
+            material.renderQueue =
+                (int)UnityEngine.Rendering.RenderQueue.Transparent;
+
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+
+            shieldRenderer.material = material;
+            shieldRenderer.shadowCastingMode =
+                UnityEngine.Rendering.ShadowCastingMode.Off;
+            shieldRenderer.receiveShadows = false;
+        }
+
+        BossShieldHitbox hitbox =
+            shieldVisual.AddComponent<BossShieldHitbox>();
+
+        hitbox.Initialize(this);
+    }
+
+    private void RemoveShieldVisual()
+    {
+        if (shieldVisual == null)
+            return;
+
+        Renderer shieldRenderer =
+            shieldVisual.GetComponent<Renderer>();
+
+        if (shieldRenderer != null && shieldRenderer.material != null)
+            Destroy(shieldRenderer.material);
+
+        Destroy(shieldVisual);
+        shieldVisual = null;
+    }
+
 
     // ==========================================
     // FIND PLAYER
@@ -586,6 +867,32 @@ public class Boss : Entity
 
         SamplePlayerMotion();
 
+        if (shieldCasting)
+        {
+            StopAgent();
+            FaceTarget();
+            return;
+        }
+
+        if (shieldActive)
+        {
+            // Во время щита Король стоит на месте.
+            StopAgent();
+            FaceTarget();
+
+            if (Time.time >= nextShieldVolley)
+            {
+                nextShieldVolley =
+                    Time.time + Mathf.Max(0.5f, shieldSwordInterval);
+
+                StartCoroutine(ShieldSwordVolley());
+            }
+
+            // Обычные атаки и преследование пока отключены.
+            return;
+        }
+
+
         // Knife storms are independent of the main attack animation.
         // They continue while the boss casts beams or other attacks.
         if (enraged && enableRageKnifeStorm &&
@@ -646,6 +953,15 @@ public class Boss : Entity
         }
 
         float playerDistance = FlatDistance(transform.position, player.position);
+
+        if (enableShieldPhase &&
+            Time.time >= nextShieldAbility &&
+            playerDistance <= 30f)
+        {
+            nextShieldAbility = Time.time + shieldCooldown;
+            StartCoroutine(ShieldAbilityRoutine());
+            return;
+        }
 
         // SKELETON HAND — Phase 2+
         if (enableSkeletonHand &&
@@ -2190,6 +2506,128 @@ public class Boss : Entity
         }
     }
 
+
+    private IEnumerator ShieldSwordVolley()
+    {
+        if (!shieldActive || isDown || defeated || player == null)
+            yield break;
+
+        float spawnRadius = Mathf.Max(1.5f, shieldRadius * 0.55f);
+        Vector3 direction = player.position - transform.position;
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f)
+            direction = transform.forward;
+        direction.Normalize();
+
+        Vector3 spawn = transform.position + direction * spawnRadius;
+        spawn.y = player.position.y + knifeHeightOffset;
+
+        GameObject sword = CreateRageKnife(spawn);
+        if (sword != null)
+        {
+            sword.name = "Boss_Shield_Sword";
+            StartCoroutine(FlyShieldSword(sword, 0f));
+        }
+
+        yield return null;
+    }
+
+    private IEnumerator FlyShieldSword(GameObject sword, float delay)
+    {
+        float windup = Mathf.Max(0.05f, shieldSwordWindup) + delay;
+        float elapsed = 0f;
+
+        // Короткая задержка перед запуском даёт игроку время среагировать.
+        while (elapsed < windup &&
+               sword != null &&
+               shieldActive &&
+               !isDown &&
+               !defeated)
+        {
+            elapsed += Time.deltaTime;
+            sword.transform.Rotate(
+                0f, 150f * Time.deltaTime, 0f, Space.World
+            );
+
+            yield return null;
+        }
+
+        if (sword == null || !shieldActive ||
+            isDown || defeated || player == null)
+        {
+            RemoveKnife(sword);
+            yield break;
+        }
+
+        Vector3 direction =
+            (player.position + Vector3.up * knifeHeightOffset -
+             sword.transform.position).normalized;
+
+        float life = 0f;
+
+        while (life < shieldSwordLifetime &&
+               sword != null &&
+               shieldActive &&
+               !isDown &&
+               !defeated &&
+               player != null)
+        {
+            float dt = Time.deltaTime;
+            life += dt;
+
+            Vector3 target =
+                player.position +
+                Vector3.up * knifeHeightOffset +
+                playerVelocity * 0.13f;
+
+            Vector3 desired = target - sword.transform.position;
+
+            if (desired.sqrMagnitude > 0.001f)
+            {
+                direction = Vector3.Slerp(
+                    direction,
+                    desired.normalized,
+                    Mathf.Clamp01(shieldSwordTurnSpeed * dt)
+                ).normalized;
+            }
+
+            sword.transform.rotation = Quaternion.LookRotation(direction);
+
+            Vector3 previous = sword.transform.position;
+            Vector3 next = previous + direction * shieldSwordSpeed * dt;
+            sword.transform.position = next;
+
+            // Проверяем весь пройденный отрезок, чтобы быстрый меч
+            // не пролетал сквозь игрока между кадрами.
+            Vector3 segment = next - previous;
+
+            float u = segment.sqrMagnitude > 0.00001f
+                ? Mathf.Clamp01(
+                    Vector3.Dot(target - previous, segment) /
+                    segment.sqrMagnitude)
+                : 0f;
+
+            Vector3 closest = previous + segment * u;
+
+            if (Vector3.Distance(closest, target) <= shieldSwordHitRadius)
+            {
+                if (playerEntity == null)
+                    playerEntity = player.GetComponentInParent<Entity>();
+
+                if (playerEntity != null)
+                    playerEntity.TakeDamage(Damage(shieldSwordDamage), this);
+
+                PlayOnce(fireballImpactPrefab, next);
+                break;
+            }
+
+            yield return null;
+        }
+
+        RemoveKnife(sword);
+    }
+
+
     private IEnumerator FlyRageKnife(Vector3 spawn, float additionalDelay)
     {
         GameObject knife = CreateRageKnife(spawn);
@@ -2272,6 +2710,9 @@ public class Boss : Entity
         StopAllCoroutines();
         ClearBeamVisuals();
         ClearKnifeVisuals();
+
+        shieldActive = false;
+        RemoveShieldVisual();
 
         StopAgent();
 

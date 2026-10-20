@@ -37,6 +37,11 @@ public class Gravitation : MonoBehaviour
     public float damper = 50f;
     public float maxThrowSpeed = 15f;
 
+    [Header("Punch Launch")]
+    [Tooltip("Скорость предмета после удара ЛКМ, когда он удерживается гравипушкой.")]
+    [Min(1f)]
+    public float punchLaunchSpeed = 18f;
+
     private float originalDrag;
 
     #endregion
@@ -120,6 +125,12 @@ public class Gravitation : MonoBehaviour
             return;
 
         grabbedRB = rb;
+        ThrownObjectDamage previousDamage =
+    grabbedRB.GetComponent<ThrownObjectDamage>();
+
+        if (previousDamage != null)
+            previousDamage.Disarm();
+
         grabbedBrain = hit.collider.GetComponentInParent<EnemyBase>();
         grabbedRB.maxLinearVelocity = maxThrowSpeed;
 
@@ -197,6 +208,64 @@ public class Gravitation : MonoBehaviour
 
         grabbedRB = null;
         grabbedBrain = null;
+    }
+
+    public GameObject LaunchHeldObject(Vector3 direction)
+    {
+        if (grabbedRB == null)
+            return null;
+
+        Rigidbody rb = grabbedRB;
+        EnemyBase enemy = grabbedBrain;
+
+        GameObject launchedObject = enemy != null
+            ? enemy.gameObject
+            : rb.gameObject;
+
+        // Сначала прекращаем удержание, чтобы пружина
+        // больше не тянула предмет обратно к игроку.
+        rb.linearDamping = originalDrag;
+
+        if (enemy != null)
+            enemy.groundCheckEnable = true;
+
+        OnReleased?.Invoke(launchedObject);
+
+        grabbedRB = null;
+        grabbedBrain = null;
+
+        if (rb == null)
+            return launchedObject;
+
+        if (direction.sqrMagnitude < 0.001f)
+            direction = transform.forward;
+
+        direction.Normalize();
+
+        rb.isKinematic = false;
+        rb.maxLinearVelocity = Mathf.Max(
+            rb.maxLinearVelocity,
+            punchLaunchSpeed
+        );
+
+        // Направленный запуск с предсказуемой начальной скоростью.
+        rb.linearVelocity = direction * punchLaunchSpeed;
+        rb.WakeUp();
+
+        // Урон от предметов. Самого врага, захваченного гравипушкой,
+        // не регистрируем как метательный предмет.
+        if (enemy == null)
+        {
+            ThrownObjectDamage impactDamage =
+                rb.GetComponent<ThrownObjectDamage>();
+
+            if (impactDamage == null)
+                impactDamage = rb.gameObject.AddComponent<ThrownObjectDamage>();
+
+            impactDamage.Arm();
+        }
+
+        return launchedObject;
     }
 
     #endregion
