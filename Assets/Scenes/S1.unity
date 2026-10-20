@@ -387,6 +387,58 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!1 &11054904
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 11054906}
+  - component: {fileID: 11054905}
+  m_Layer: 0
+  m_Name: BridgeKeyRadar
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &11054905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 11054904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a29389a12951ad4bb528c78c5154b3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BridgeKeyRadar
+  radarSize: 160
+  radarRange: 30
+  screenMargin: 20
+  showRadar: 1
+  radarColor: {r: 0.02, g: 0.1, b: 0.08, a: 0.88}
+  gridColor: {r: 0.2, g: 1, b: 0.65, a: 0.55}
+  keyColor: {r: 1, g: 0.8, b: 0.2, a: 1}
+  playerColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!4 &11054906
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 11054904}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &12473354
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -39833,33 +39885,9 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: speed
-      value: 24
-      objectReference: {fileID: 0}
-    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: player
       value: 
       objectReference: {fileID: 5594993014681728341}
-    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: maxHealth
-      value: 7000
-      objectReference: {fileID: 0}
-    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: currentHealth
-      value: 7000
-      objectReference: {fileID: 0}
-    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: rageKnifeSpeed
-      value: 18
-      objectReference: {fileID: 0}
-    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: hellTrapSpearPrefab
-      value: 
-      objectReference: {fileID: 1936666563103497499, guid: 135423799a33d614d9c43e8119a042a5, type: 3}
-    - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
-      propertyPath: skeletonHandLifetime
-      value: 6
-      objectReference: {fileID: 0}
     - target: {fileID: 6677150330632767084, guid: 4783af2bbbe14ba4299fcbb1675de5f4, type: 3}
       propertyPath: 'playerMovementBehaviours.Array.data[0]'
       value: 
@@ -55681,3 +55709,4 @@ SceneRoots:
   - {fileID: 656852263}
   - {fileID: 409310658}
   - {fileID: 151045478}
+  - {fileID: 11054906}
