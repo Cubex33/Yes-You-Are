@@ -1,12 +1,15 @@
+using Lucy.Core;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using Lucy.Core;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class Boss : Entity
 {
+    public event Action<Boss> ShieldActivated;
+    public event Action<Boss> ShieldDeactivated;
     [Header("Target & NavMesh")]
     [SerializeField] private Transform player;
     [SerializeField] private float speed = 5.4f;
@@ -388,6 +391,9 @@ public class Boss : Entity
 
         shieldActive = false;
         shieldEndsAt = Time.time;
+
+        ShieldDeactivated?.Invoke(this);
+
         shieldBreakingProjectile = projectile;
         shieldBrokenAt = Time.time;
 
@@ -497,7 +503,7 @@ public class Boss : Entity
         // ўит Ч временна€ способность, а не посто€нна€ фаза с начала бо€.
         shieldActive = false;
         shieldCasting = false;
-        nextShieldAbility = availableAt + Random.Range(8f, 14f);
+        nextShieldAbility = availableAt + UnityEngine.Random.Range(8f, 14f);
 
         CheckLowHealth();
     }
@@ -592,6 +598,8 @@ public class Boss : Entity
         shieldCasting = false;
         shieldActive = true;
         CreateShieldVisual();
+
+        ShieldActivated?.Invoke(this);
         shieldEndsAt = Time.time + shieldDuration;
         nextShieldVolley = Time.time + 1f;
         nextShieldSkeleton = Time.time + shieldSkeletonInterval;
@@ -602,6 +610,8 @@ public class Boss : Entity
             if (Time.time >= shieldEndsAt)
             {
                 shieldActive = false;
+                ShieldDeactivated?.Invoke(this);
+
                 RemoveShieldVisual();
                 ClearKnifeVisuals();
                 break;
@@ -637,7 +647,7 @@ public class Boss : Entity
         if (summons.Count >= maxLivingSummons)
             return;
 
-        Vector3 desired = transform.position + Random.insideUnitSphere * summonRadius;
+        Vector3 desired = transform.position + UnityEngine.Random.insideUnitSphere * summonRadius;
         desired.y = transform.position.y;
 
         int areaMask = agent != null ? agent.areaMask : NavMesh.AllAreas;
@@ -979,7 +989,7 @@ public class Boss : Entity
         // Repeated jumping is dangerous: an air burst targets the predicted landing area.
         if (enableAntiAir && IsPlayerAirborne() &&
             playerDistance <= antiAirRange && Time.time >= nextAntiAir &&
-            Time.time >= nextAction && Random.value < 0.28f)
+            Time.time >= nextAction && UnityEngine.Random.value < 0.28f)
         {
             nextAntiAir = Time.time + antiAirCooldown;
             StartCoroutine(AntiAirAttack());
@@ -989,7 +999,7 @@ public class Boss : Entity
         // Dodge
         if (Time.time >= nextDodge &&
             playerDistance < 3.5f &&
-            Random.value < 0.008f)
+            UnityEngine.Random.value < 0.008f)
         {
             nextDodge = Time.time + dodgeCooldown;
 
@@ -1067,7 +1077,7 @@ public class Boss : Entity
         foreach (int type in options)
         {
             float age = Mathf.Clamp(Time.time - attackLastUsed[type], 0f, 18f);
-            float score = age + Random.Range(0f, 3f);
+            float score = age + UnityEngine.Random.Range(0f, 3f);
             if (type == lastAttackType && options.Count > 1) score -= 30f;
             // Fireball volley and mobility moves should remain frequent.
             if (type == 2 || type == 3) score += 1.5f;
@@ -1123,7 +1133,7 @@ public class Boss : Entity
                     Vector3.up,
                     fromPlayer.normalized
                 ) *
-                (Random.value < 0.5f ? 1f : -1f);
+                (UnityEngine.Random.value < 0.5f ? 1f : -1f);
 
             Vector3 candidate =
                 player.position +
@@ -1174,7 +1184,7 @@ public class Boss : Entity
 
         Vector3 sideways =
             Vector3.Cross(Vector3.up, toward.normalized) *
-            (Random.value < 0.5f ? 1f : -1f);
+            (UnityEngine.Random.value < 0.5f ? 1f : -1f);
 
         NavMeshHit hit;
 
@@ -1768,11 +1778,11 @@ public class Boss : Entity
         // Evenly spaced circle around the player (or the boss), adjustable in Inspector.
         // A small angular variation keeps attacks less predictable.
         Vector3 circleOrigin = laserCircleCenteredOnPlayer ? PredictPlayer(0.25f) : transform.position;
-        float circleRotation = Random.Range(0f, Mathf.PI * 2f);
+        float circleRotation = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
         for (int i = 0; i < count; i++)
         {
             float angle = circleRotation + i * Mathf.PI * 2f / count +
-                Random.Range(-laserCircleRandomness, laserCircleRandomness);
+                UnityEngine.Random.Range(-laserCircleRandomness, laserCircleRandomness);
             float radius = Mathf.Max(1f, laserCircleRadius);
             Vector3 direction = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
             centers[i] = GroundPoint(circleOrigin + direction * radius);
@@ -1992,7 +2002,7 @@ public class Boss : Entity
         if (player == null || isDown || defeated) yield break;
         int count = Mathf.Clamp(enraged ? rageHellTrapCount : hellTrapCount, 1, 6);
         Vector3 focus = GroundPoint(PredictPlayer(.3f));
-        float angleOffset = Random.Range(0f, Mathf.PI * 2f);
+        float angleOffset = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
         float spread = Mathf.Max(1f, hellTrapSpacing);
         for (int n = 0; n < count; n++)
         {
@@ -2013,8 +2023,8 @@ public class Boss : Entity
         float shrinkSeconds = Mathf.Max(.8f, hellTrapShrinkTime);
         float finalRadius = Mathf.Max(2f, hellTrapFinalRadius);
         float warningSeconds = Mathf.Max(.4f, hellTrapWarning);
-        float safeAngle = Random.value * 360f;
-        int safePillar = Random.Range(0, count);
+        float safeAngle = UnityEngine.Random.value * 360f;
+        int safePillar = UnityEngine.Random.Range(0, count);
         GameObject warning = CreateExplosionCircle(center, startRadius,
             new Color(1f, .55f, .08f, 1f), "HellTrap_Warning_" + index);
         yield return new WaitForSeconds(warningSeconds);
@@ -2078,7 +2088,7 @@ public class Boss : Entity
                 meteors--;
                 nextMeteorAt += Mathf.Max(.27f, shrinkSeconds / Mathf.Max(1, enraged ? rageHellTrapMeteorCount : hellTrapMeteorCount));
                 Vector3 meteorPoint = GroundPoint(PredictPlayer(.3f) +
-                    new Vector3(Random.Range(-2f, 2f), 0f, Random.Range(-2f, 2f)));
+                    new Vector3(UnityEngine.Random.Range(-2f, 2f), 0f, UnityEngine.Random.Range(-2f, 2f)));
                 StartCoroutine(HellTrapMeteor(meteorPoint));
             }
             yield return null;
@@ -2235,7 +2245,7 @@ public class Boss : Entity
                     Mathf.Clamp01(dashSteering * dt)).normalized;
             agent.Move(heading * dashSpeed * dt);
 
-            if (Random.value < 0.4f)
+            if (UnityEngine.Random.value < 0.4f)
                 PlayOnce(dashVFX, transform.position);
 
             if (playerEntity == null && player != null)
@@ -2289,7 +2299,7 @@ public class Boss : Entity
 
         int count =
             Mathf.Min(
-                Random.Range(minCount, maxCount + 1),
+                UnityEngine.Random.Range(minCount, maxCount + 1),
                 slots
             );
 

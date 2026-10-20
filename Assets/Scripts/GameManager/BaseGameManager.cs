@@ -1,5 +1,6 @@
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -8,8 +9,13 @@ public class BaseGameManager : MonoBehaviour
     [Header("Settings")]
     public bool autoStart = true;
 
-    [Header("Missions")]
+    [Header("Main Mission Sequence")]
+    [Tooltip("ћиссии, которые должны запускатьс€ строго по очереди.")]
     public BaseMission[] missions;
+
+    [Header("Independent Missions")]
+    [Tooltip("ћиссии, которые запускаютс€ сразу и выполн€ютс€ независимо от основной цепочки.")]
+    public BaseMission[] independentMissions;
 
     public Action<BaseMission> OnMissionChanged;
 
@@ -23,6 +29,8 @@ public class BaseGameManager : MonoBehaviour
     protected int currentMissionIndex = -1;
 
     public bool debugEnabled;
+
+    private readonly HashSet<BaseMission> registeredMissions = new();
 
     public string CurrentMissionName =>
         currentMission != null ? currentMission.missionName : string.Empty;
@@ -40,6 +48,11 @@ public class BaseGameManager : MonoBehaviour
     public virtual void StartGame()
     {
         currentMissionIndex = -1;
+
+        // Ќезависимые миссии запускаютс€ сразу.
+        StartIndependentMissions();
+
+        // ќсновна€ цепочка продолжает работать по старым правилам.
         StartNextMission();
     }
 
@@ -57,27 +70,14 @@ public class BaseGameManager : MonoBehaviour
         MissionFailedHandler();
     }
 
-    /// <summary>
-    /// Resets all top-level missions and restarts the sequence from the beginning.
-    /// Call this when the player dies and needs to retry the entire mission chain.
-    /// </summary>
     public virtual void RestartGameSequence()
     {
-        // Remove event subscriptions from the current mission.
-        if (currentMission != null)
-            UnregisterMissionEvents(currentMission);
+        UnregisterAllMissionEvents();
 
-        // Reset all top-level missions.
-        if (missions != null)
-        {
-            foreach (BaseMission mission in missions)
-            {
-                if (mission == null)
-                    continue;
+        var resetMissions = new HashSet<BaseMission>();
 
-                mission.ResetMission();
-            }
-        }
+        ResetMissionArray(missions, resetMissions);
+        ResetMissionArray(independentMissions, resetMissions);
 
         currentMission = null;
         currentMissionIndex = -1;
@@ -88,9 +88,68 @@ public class BaseGameManager : MonoBehaviour
         StartGame();
     }
 
+    private void ResetMissionArray(
+        BaseMission[] missionArray,
+        HashSet<BaseMission> alreadyReset)
+    {
+        if (missionArray == null)
+            return;
+
+        foreach (BaseMission mission in missionArray)
+        {
+            if (mission == null || !alreadyReset.Add(mission))
+                continue;
+
+            mission.ResetMission();
+        }
+    }
+
     #endregion
 
     #region Missions
+
+    private void StartIndependentMissions()
+    {
+        if (independentMissions == null)
+            return;
+
+        foreach (BaseMission mission in independentMissions)
+        {
+            if (mission == null)
+                continue;
+
+            // Ќе запускаем одну миссию одновременно в двух списках.
+            if (ContainsMission(missions, mission))
+            {
+                Debug.LogWarning(
+                    $"[GameManager] Mission '{mission.missionName}' is assigned to both lists. " +
+                    "Remove it from the main sequence or the independent list.",
+                    mission);
+                continue;
+            }
+
+            RegisterMissionEvents(mission);
+
+            if (debugEnabled)
+                Debug.Log($"[GameManager] Starting independent mission: {mission.missionName}");
+
+            mission.StartMission();
+        }
+    }
+
+    private bool ContainsMission(BaseMission[] array, BaseMission target)
+    {
+        if (array == null || target == null)
+            return false;
+
+        foreach (BaseMission mission in array)
+        {
+            if (mission == target)
+                return true;
+        }
+
+        return false;
+    }
 
     protected void StartNextMission()
     {
@@ -98,6 +157,7 @@ public class BaseGameManager : MonoBehaviour
 
         if (!TryGetMission(currentMissionIndex, out currentMission))
         {
+            currentMission = null;
             AllMissionsCompletedHandler();
             return;
         }
@@ -148,8 +208,14 @@ public class BaseGameManager : MonoBehaviour
         if (mission == null)
             return;
 
+        // «ащита от повторной подписки на событи€.
+        mission.OnMissionCompleted -= HandleMissionCompleted;
+        mission.OnMissionFailed -= HandleMissionFailed;
+
         mission.OnMissionCompleted += HandleMissionCompleted;
         mission.OnMissionFailed += HandleMissionFailed;
+
+        registeredMissions.Add(mission);
     }
 
     protected void UnregisterMissionEvents(BaseMission mission)
@@ -159,34 +225,77 @@ public class BaseGameManager : MonoBehaviour
 
         mission.OnMissionCompleted -= HandleMissionCompleted;
         mission.OnMissionFailed -= HandleMissionFailed;
+
+        registeredMissions.Remove(mission);
+    }
+
+    private void UnregisterAllMissionEvents()
+    {
+        foreach (BaseMission mission in registeredMissions)
+        {
+            if (mission == null)
+                continue;
+
+            mission.OnMissionCompleted -= HandleMissionCompleted;
+            mission.OnMissionFailed -= HandleMissionFailed;
+        }
+
+        registeredMissions.Clear();
     }
 
     protected virtual void HandleMissionCompleted(BaseMission mission)
     {
+        if (mission == null)
+            return;
+
         if (debugEnabled)
             Debug.Log($"[GameManager] Completed mission: {mission.missionName}");
 
         UnregisterMissionEvents(mission);
+
+        // Ќезависима€ мисси€ завершаетс€ сама по себе и не переключает
+        // основную последовательность.
+        if (mission != currentMission)
+        {
+            if (debugEnabled)
+                Debug.Log($"[GameManager] Independent mission completed: {mission.missionName}");
+
+            return;
+        }
+
         StartNextMission();
     }
 
     protected virtual void HandleMissionFailed(BaseMission mission)
     {
+        if (mission == null)
+            return;
+
         if (debugEnabled)
             Debug.Log($"[GameManager] Failed mission: {mission.missionName}");
 
         UnregisterMissionEvents(mission);
+
+        // ќшибка независимой миссии не должна автоматически проваливать игру.
+        if (mission != currentMission)
+        {
+            if (debugEnabled)
+                Debug.Log($"[GameManager] Independent mission failed: {mission.missionName}");
+
+            return;
+        }
+
         MissionFailed();
     }
 
     #endregion
 
-    #region Hooks (for subclasses)
+    #region Hooks
 
     protected virtual void AllMissionsCompletedHandler()
     {
         if (debugEnabled)
-            Debug.Log("=== All missions completed ===");
+            Debug.Log("=== All main-sequence missions completed ===");
 
         OnAllMissionCompleted?.Invoke();
     }

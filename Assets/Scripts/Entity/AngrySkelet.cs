@@ -9,6 +9,12 @@ public class AngrySkelet : Entity
     [Header("Target")]
     [SerializeField] private Transform player;
 
+    [Header("Detection")]
+    [SerializeField, Min(1f)] private float detectionRange = 25f;
+    [SerializeField, Min(1f)] private float loseTargetRange = 32f;
+
+    private bool hasDetectedPlayer;
+
     [Header("Movement")]
     [SerializeField] private float stopDistance = 2f;
 
@@ -73,6 +79,7 @@ public class AngrySkelet : Entity
         SetWalking(false);
     }
 
+
     private void Update()
     {
         if (isDead || player == null || agent == null ||
@@ -92,12 +99,35 @@ public class AngrySkelet : Entity
             player.position
         );
 
+        // Если игрок ещё не обнаружен — проверяем радиус обнаружения.
+        if (!hasDetectedPlayer)
+        {
+            if (distance > detectionRange)
+            {
+                agent.isStopped = true;
+                agent.ResetPath();
+                SetWalking(false);
+                return;
+            }
+
+            hasDetectedPlayer = true;
+        }
+
+        // Если игрок убежал слишком далеко — скелет прекращает погоню.
+        if (distance > loseTargetRange)
+        {
+            hasDetectedPlayer = false;
+            agent.isStopped = true;
+            agent.ResetPath();
+            SetWalking(false);
+            return;
+        }
+
         if (distance > attackRange)
         {
-            // Преследование игрока
+            // Преследование обнаруженного игрока
             agent.isStopped = false;
             agent.SetDestination(player.position);
-
             SetWalking(true);
         }
         else
@@ -116,6 +146,7 @@ public class AngrySkelet : Entity
             }
         }
     }
+
 
     private void SetWalking(bool walking)
     {

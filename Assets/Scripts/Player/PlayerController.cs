@@ -12,6 +12,7 @@ public class PlayerController : FPPController
     public static event Action<PlayerController> GrabDistanceAdjusted;
     public static event Action<PlayerController> StaminaChargeStarted;
     public static event Action<PlayerController> SuperAttackUsed;
+    public static event Action<PlayerController> GravityObjectThrown;
     [Header("Runtime")]
     public KnockdownAttack knockdownAttack;
     public Gravitation gravitation;
@@ -32,19 +33,24 @@ public class PlayerController : FPPController
 
             knockdownAttack.Attack();
 
-            // Если ЛКМ запустила удерживаемый предмет,
-            // запрещаем повторный захват до отпускания ПКМ.
+            // Отдельно фиксируем бросок удерживаемого предмета.
             if (wasHoldingObject && !gravitation.IsGrabbing)
+            {
                 gravityLaunchLocked = true;
+                GravityObjectThrown?.Invoke(this);
+            }
 
             if (wasSuperAttack && !knockdownAttack.IsFullStamina)
                 SuperAttackUsed?.Invoke(this);
         };
+
+        // ПКМ нажата — разрешаем гравипушке захватывать предмет.
         InputProvider.Global.Controls.Player.Grab.performed += _ =>
         {
             gravitationHolding = true;
         };
 
+        // ПКМ отпущена — прекращаем удержание и снимаем блокировку броска.
         InputProvider.Global.Controls.Player.Grab.canceled += _ =>
         {
             gravitationHolding = false;
